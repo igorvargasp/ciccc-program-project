@@ -1,0 +1,62 @@
+import { Router } from "express";
+import { and, asc, desc, eq, gte, lte, or } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "../db/index.js";
+import { matches, matchEvents } from "../db/schema.js";
+import { asyncHandler } from "../lib/async-handler.js";
+import { notFound } from "../lib/http-error.js";
+
+export const matchesRouter = Router();
+
+const listQuery = z.object({
+  teamId: z.string().uuid().optional(),
+  seasonId: z.string().uuid().optional(),
+  status: z.enum(["scheduled", "live", "finished"]).optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+// GET /api/matches — calendar / history with filters
+matchesRouter.get(
+  "/",
+  asyncHandler(async (req, res) => {
+    const q = listQuery.parse(req.query);
+
+    const filters = [];
+    if (q.teamId) filters.push(or(eq(matches.homeTeamId, q.teamId), eq(matches.awayTeamId, q.teamId)));
+    if (q.seasonId) filters.push(eq(matches.seasonId, q.seasonId));
+    if (q.status) filters.push(eq(matches.status, q.status));
+    if (q.from) filters.push(gte(matches.kickoffAt, q.from));
+    if (q.to) filters.push(lte(matches.kickoffAt, q.to));
+
+    // Upcoming matches ascending; everything else most-recent first.
+    const orderBy = q.status === "scheduled" ? asc(matches.kickoffAt) : desc(matches.kickoffAt);
+
+    const rows = await db
+      .select()
+      .from(matches)
+      .where(filters.length ? and(...filters) : undefined)
+      .orderBy(orderBy)
+      .limit(q.limit);
+
+    res.json({ data: rows });
+  }),
+);
+
+// GET /api/matches/:id — match detail with events
+matchesRouter.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const [match] = await db.select().from(matches).where(eq(matches.id, req.params.id)).limit(1);
+    if (!match) throw notFound("Match");
+
+    const events = await db
+      .select()
+      .from(matchEvents)
+      .where(eq(matchEvents.matchId, match.id))
+      .orderBy(asc(matchEvents.minute));
+
+    res.json({ data: { ...match, events } });
+  }),
+);
