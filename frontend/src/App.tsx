@@ -2,10 +2,15 @@ import { useState } from "react";
 import { useAuth } from "./context/AuthContext";
 import { LoginCard } from "./components/Auth/LoginCard";
 import { RegisterPage } from "./components/Auth/RegisterCard";
+import { TermsPage } from "./pages/TermsPage"; // Certifique-se de que o caminho do import está correto de acordo com onde você criou o arquivo
 
 function App() {
   const { user, logout, loading } = useAuth();
-  const [authScreen, setAuthScreen] = useState<"login" | "register">("login");
+
+  // 1. Adicionamos "terms" como uma das opções possíveis de tela
+  const [authScreen, setAuthScreen] = useState<"login" | "register" | "terms">(
+    "login",
+  );
 
   if (loading) {
     return (
@@ -30,7 +35,7 @@ function App() {
           <div className="pt-4">
             <button
               onClick={logout}
-              className="px-6 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-semibold transition-all"
+              className="px-6 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-semibold transition-all cursor-pointer"
             >
               Fazer Logout
             </button>
@@ -40,11 +45,24 @@ function App() {
     );
   }
 
+  // 2. Se a tela ativa for a de login
   if (authScreen === "login") {
     return <LoginCard onSwitchToRegister={() => setAuthScreen("register")} />;
   }
 
-  return <RegisterPage onSwitchToLogin={() => setAuthScreen("login")} />;
+  // 3. Se a tela ativa for a de termos
+  if (authScreen === "terms") {
+    return <TermsPage onBack={() => setAuthScreen("register")} />;
+  }
+
+  // 4. Por padrão (se for "register"), renderiza o formulário de cadastro
+  // Passamos a função onOpenTerms que muda o estado para "terms"
+  return (
+    <RegisterPage
+      onSwitchToLogin={() => setAuthScreen("login")}
+      onOpenTerms={() => setAuthScreen("terms")}
+    />
+  );
 }
 
 export default App;
