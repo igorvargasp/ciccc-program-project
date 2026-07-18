@@ -23,18 +23,67 @@ const appFeatures = [
     tag: "Market",
   },
   {
-    name: "Live Match Hub",
-    description:
-      "Instantly stream, track, and dissect statistics as they happen on the pitch.",
-    icon: "stadium",
-    tag: "Live Data",
-  },
-  {
     name: "Scouting Radar",
     description:
       "Identify global hidden talents using advanced algorithmic filters.",
     icon: "radar",
     tag: "Scouting",
+  },
+  {
+    name: "Personalized Hub",
+    description:
+      "Favorite team selection and custom dashboard tailored to your football passions.",
+    icon: "dashboard",
+    tag: "Dashboard",
+  },
+  {
+    name: "Match Calendar",
+    description:
+      "Upcoming matches calendar featuring deep-dive match insights and details.",
+    icon: "calendar_month",
+    tag: "Fixtures",
+  },
+  {
+    name: "Match History",
+    description:
+      "Historical match data and previous results breakdown from global tournaments.",
+    icon: "history",
+    tag: "Results",
+  },
+  {
+    name: "League Tables",
+    description:
+      "Up-to-date league standings and multi-competition tables tracked instantly.",
+    icon: "format_list_numbered",
+    tag: "Standings",
+  },
+  {
+    name: "Match Simulator",
+    description:
+      "Simulate match results with dynamic, real-time standings adjustments.",
+    icon: "sports_esports",
+    tag: "AI Engine",
+  },
+  {
+    name: "Dream Lineup Builder",
+    description:
+      "Custom team lineup builder to configure and visualize your ultimate squad tactical board.",
+    icon: "assignment",
+    tag: "Tactics",
+  },
+  {
+    name: "Dual Theme Engine",
+    description:
+      "Full Dark and Light mode interface support optimized for daylight or late-night viewing.",
+    icon: "contrast",
+    tag: "UI / UX",
+  },
+  {
+    name: "Live Alerts",
+    description:
+      "Real-time push notifications for live matches and critical favorite team updates.",
+    icon: "notifications_active",
+    tag: "Alerts",
   },
   {
     name: "AI Formations",
@@ -181,8 +230,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         <section className="lg:col-span-5 hidden lg:flex flex-col justify-center space-y-4 pr-4">
           <div className="space-y-3">
             <h1 className="text-5xl font-bold text-[#e2e2e8] leading-none tracking-tight">
-              ENGINEERED FOR <br />
-              <span className="text-[#00d2fd]">VICTORY.</span>
+              PREDICT THE <br />
+              <span className="text-[#00d2fd]">UNPREDICTED.</span>
             </h1>
             <p className="text-base text-[#c1c6d7] max-w-md font-normal leading-relaxed">
               Join the world's most advanced football intelligence platform.
@@ -315,7 +364,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         {/* Right Side: Registration Form */}
         <section className="lg:col-span-7 flex items-center justify-center">
           {/* max-w-xl fornece o tamanho ideal expandido lateralmente */}
-          <div className="w-full max-w-xl bg-[#1e2024] border border-[#414755] p-8 md:p-10 shadow-2xl relative z-20 transition-colors duration-300 hover:border-[#00d2fd]">
+
+          <div className="w-full max-w-xl bg-[#1e2024] border border-[#414755] p-8 md:p-10 shadow-2xl relative z-20 transition-colors duration-300 hover:border-[#414755]/60">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#00d2fd] via-[#4b8eff] to-transparent"></div>
             <div className="mb-8">
               <div className="text-[12px] font-bold tracking-widest text-[#00d2fd] mb-2 uppercase">
                 SYSTEM ACCESS
