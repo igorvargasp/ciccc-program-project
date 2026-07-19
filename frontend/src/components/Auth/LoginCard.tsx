@@ -114,12 +114,12 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
         <div className="relative z-20 flex flex-col justify-end p-12 space-y-6 xl:p-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#00d2fd]/10 border border-[#00d2fd]/30 text-[#00d2fd] text-xs font-bold uppercase tracking-widest self-start backdrop-blur-sm">
             <span className="w-1.5 h-1.5 bg-[#00d2fd] animate-pulse rounded-full"></span>
-            Neural Match Engine v2.6
+            ALI SCORE
           </div>
           <h1 className="text-5xl xl:text-6xl font-extrabold uppercase max-w-lg leading-[0.95] tracking-tight">
-            Dominate The <br />
+            PREDICT THE <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00d2fd] to-[#4b8eff]">
-              Tactical Arena
+              UNPREDICTED
             </span>
           </h1>
           <p className="text-base text-[#c1c6d7] max-w-md font-normal leading-relaxed">
@@ -131,7 +131,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
 
       {/* RIGHT COLUMN: Minimalist High-Fidelity Login Interface */}
       <main className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 xl:p-16 bg-[#0d0f12] relative z-10">
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-xl space-y-8">
           {/* Platform Identity & Header */}
           <div className="text-center lg:text-left space-y-3">
             <div className="flex items-center justify-center lg:justify-start gap-2.5 mb-2">
@@ -141,13 +141,10 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
               >
                 sports_soccer
               </span>
-              <span className="text-2xl font-black text-[#e2e2e8] tracking-wider uppercase">
-                ALI SCORE
-              </span>
             </div>
             <div>
               <h2 className="text-2xl font-bold text-[#e2e2e8] uppercase tracking-tight">
-                Welcome Back, Operator
+                Welcome Back!
               </h2>
               <p className="text-sm text-[#8b90a0] mt-1">
                 Provide your security credentials to access the central console.
@@ -167,7 +164,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
                   className="text-[11px] font-bold text-[#8b90a0] group-focus-within:text-[#00d2fd] uppercase tracking-widest transition-colors duration-200 block"
                   htmlFor="email"
                 >
-                  Corporate Email
+                  Email Address
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-[#414755] group-focus-within:text-[#00d2fd] transition-colors duration-200 pointer-events-none select-none">
@@ -191,7 +188,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
                   className="text-[11px] font-bold text-[#8b90a0] group-focus-within:text-[#00d2fd] uppercase tracking-widest transition-colors duration-200 block"
                   htmlFor="password"
                 >
-                  Security Key
+                  Password
                 </label>
                 <div className="relative">
                   <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-[#414755] group-focus-within:text-[#00d2fd] transition-colors duration-200 pointer-events-none select-none">
