@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 interface LoginCardProps {
   onSwitchToRegister: () => void;
 }
 
 export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
+  const { login } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Referência para o player do YouTube e ID do container
   const playerRef = useRef<any>(null);
@@ -36,7 +40,6 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
             startLoopCheck(event.target);
           },
           onStateChange: (event: any) => {
-            // Fallback de segurança caso o loop manual falhe
             if (event.data === (window as any).YT.PlayerState.ENDED) {
               event.target.seekTo(0);
               event.target.playVideo();
@@ -57,7 +60,6 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
       (window as any).onYouTubeIframeAPIReady();
     }
 
-    // Monitora o tempo para reiniciar o vídeo 1.5 segundos antes do fim absoluto
     function startLoopCheck(player: any) {
       const checkInterval = setInterval(() => {
         if (player && typeof player.getCurrentTime === "function") {
@@ -74,17 +76,35 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Pipeline de autenticação aqui
-    console.log({ email, password, rememberMe });
+
+    if (!email || !password) {
+      alert("Please enter both email and password.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Chama o método de login do seu contexto de autenticação
+      await login(email, password);
+    } catch (error: unknown) {
+      console.error("Login error:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Invalid credentials. Please try again.";
+      alert(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen bg-[#0d0f12] w-full font-['Archivo_Narrow'] text-[#e2e2e8] selection:bg-[#00d2fd]/30 selection:text-[#00d2fd]">
       {/* LEFT COLUMN: Immersive Cinematic Hero Panel (Desktop Only) */}
       <section className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#07090c] border-r border-[#414755]/20">
-        {/* Deep Overlay Gradients for Enhanced Readability & Depth */}
         <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#0d0f12] via-[#0d0f12]/40 to-transparent"></div>
         <div className="absolute inset-0 z-10 bg-gradient-to-r from-transparent to-[#0d0f12]"></div>
 
@@ -101,7 +121,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
           />
         </div>
 
-        {/* Matrix Tech Grid Overlay to reinforce the IT/AI feeling */}
+        {/* Matrix Tech Grid Overlay */}
         <div
           className="absolute inset-0 z-10 opacity-[0.03] pointer-events-none"
           style={{
@@ -154,7 +174,6 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
 
           {/* Core Authorization Container */}
           <div className="bg-[#14171c] border border-[#414755]/30 p-8 space-y-6 relative shadow-2xl transition-all duration-300 hover:border-[#414755]/60">
-            {/* Structural Cyan Accent Bar */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#00d2fd] via-[#4b8eff] to-transparent"></div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
@@ -218,7 +237,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
                 </div>
               </div>
 
-              {/* Auxiliary Controls (Remember Device & Recovery) */}
+              {/* Auxiliary Controls */}
               <div className="flex items-center justify-between text-xs pt-1">
                 <label className="flex items-center gap-2.5 cursor-pointer group">
                   <input
@@ -242,9 +261,17 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
               {/* Action Form Submission Button */}
               <button
                 type="submit"
-                className="w-full py-4 bg-[#4b8eff] hover:bg-[#00d2fd] text-[#001a41] text-xs font-black uppercase tracking-[0.25em] transition-all duration-300 active:scale-[0.99] shadow-lg shadow-[#4b8eff]/10 hover:shadow-[#00d2fd]/20 border border-transparent hover:border-white/10 cursor-pointer mt-2"
+                disabled={isSubmitting}
+                className="w-full py-4 bg-[#4b8eff] hover:bg-[#00d2fd] disabled:opacity-50 text-[#001a41] text-xs font-black uppercase tracking-[0.25em] transition-all duration-300 active:scale-[0.99] shadow-lg shadow-[#4b8eff]/10 hover:shadow-[#00d2fd]/20 border border-transparent hover:border-white/10 cursor-pointer mt-2 flex items-center justify-center gap-2"
               >
-                Authorize Session
+                {isSubmitting ? (
+                  <>
+                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-[#001a41] border-t-transparent"></span>
+                    Authorizing...
+                  </>
+                ) : (
+                  "Authorize Session"
+                )}
               </button>
             </form>
 
@@ -315,7 +342,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
         </div>
       </main>
 
-      {/* Decorative Dynamic Blur Matrices */}
+      {/* Dynamic Blur Overlay */}
       <div className="fixed top-0 right-0 p-8 z-0 pointer-events-none overflow-hidden select-none">
         <div className="w-96 h-96 bg-[#00d2fd]/5 rounded-full blur-[120px] -mr-48 -mt-48"></div>
       </div>

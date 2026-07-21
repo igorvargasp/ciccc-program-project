@@ -1,87 +1,86 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-// Tipagem dos times da liga
-interface Team {
-  id: string;
+export interface Team {
+  id: string | number;
   name: string;
-  tag: string;
-  logo: string;
-  league: string;
-  stats: {
+  badgeUrl?: string;
+  country?: string;
+  league?: string;
+  stats?: {
     winRate: string;
     goalsScored: number;
     cleanSheets: number;
   };
 }
 
-// Mock inicial de dados baseado na arquitetura esportiva do ALI SCORE
-const AVAILABLE_TEAMS: Team[] = [
-  {
-    id: "t1",
-    name: "Real Madrid",
-    tag: "RMA",
-    logo: "sports_soccer",
-    league: "La Liga",
-    stats: { winRate: "78%", goalsScored: 64, cleanSheets: 14 },
-  },
-  {
-    id: "t2",
-    name: "Manchester City",
-    tag: "MCI",
-    logo: "sports_soccer",
-    league: "Premier League",
-    stats: { winRate: "81%", goalsScored: 72, cleanSheets: 12 },
-  },
-  {
-    id: "t3",
-    name: "Barcelona",
-    tag: "FCB",
-    logo: "sports_soccer",
-    league: "La Liga",
-    stats: { winRate: "69%", goalsScored: 58, cleanSheets: 10 },
-  },
-  {
-    id: "t4",
-    name: "Arsenal",
-    tag: "ARS",
-    logo: "sports_soccer",
-    league: "Premier League",
-    stats: { winRate: "72%", goalsScored: 61, cleanSheets: 15 },
-  },
-  {
-    id: "t5",
-    name: "Bayern Munich",
-    tag: "FCB",
-    logo: "sports_soccer",
-    league: "Bundesliga",
-    stats: { winRate: "75%", goalsScored: 68, cleanSheets: 9 },
-  },
-  {
-    id: "t6",
-    name: "Paris Saint-Germain",
-    tag: "PSG",
-    logo: "sports_soccer",
-    league: "Ligue 1",
-    stats: { winRate: "70%", goalsScored: 55, cleanSheets: 11 },
-  },
-];
-
 export function Dashboard() {
-  // Estado para armazenar os IDs dos times favoritados
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(["t1", "t2"]);
+  const [favoriteTeam, setFavoriteTeam] = useState<Team | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [activeTab, setActiveTab] = useState<"feed" | "selector">("feed");
 
-  // Alterna o status de favorito do time
-  const toggleFavorite = (id: string) => {
-    setFavoriteIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-  };
+  // 1. Carrega o time salvo no localStorage e busca dados estatísticos reais na API
+  useEffect(() => {
+    const savedTeamRaw = localStorage.getItem("favorite_team");
+    if (!savedTeamRaw) return;
 
-  // Filtra os times que estão favoritados
-  const favoritedTeams = AVAILABLE_TEAMS.filter((team) =>
-    favoriteIds.includes(team.id),
-  );
+    try {
+      const savedTeam: Team = JSON.parse(savedTeamRaw);
+      setFavoriteTeam(savedTeam);
+
+      // Busca dados analíticos do time na API-Sports
+      fetchTeamStatistics(savedTeam);
+    } catch (err) {
+      console.error("Erro ao ler time favorito do localStorage:", err);
+    }
+  }, []);
+
+  const fetchTeamStatistics = async (team: Team) => {
+    setIsLoadingStats(true);
+    try {
+      const apiKey = import.meta.env.VITE_FOOTBALL_API_KEY;
+
+      // Nota: Usamos league=71 (Brasileirão) ou league=39 (Premier League) como fallback padrão se não soubermos a liga
+      // Para buscar stats de um time precisamos de team + season (+ league opcional)
+      const currentYear = new Date().getFullYear();
+      const res = await fetch(
+        `https://v3.football.api-sports.io/teams/statistics?team=${team.id}&season=${currentYear - 1}`,
+        {
+          method: "GET",
+          headers: {
+            "x-apisports-key": apiKey,
+          },
+        },
+      );
+
+      const data = await res.json();
+
+      if (data.response) {
+        const statsData = data.response;
+        const totalMatches = statsData.fixtures?.played?.total || 1;
+        const wins = statsData.fixtures?.wins?.total || 0;
+        const winRateCalc = Math.round((wins / totalMatches) * 100) + "%";
+
+        setFavoriteTeam((prev) =>
+          prev
+            ? {
+                ...prev,
+                league:
+                  statsData.league?.name || prev.country || "National League",
+                stats: {
+                  winRate: winRateCalc,
+                  goalsScored: statsData.goals?.for?.total?.total || 0,
+                  cleanSheets: statsData.clean_sheet?.total || 0,
+                },
+              }
+            : null,
+        );
+      }
+    } catch (err) {
+      console.error("Erro ao buscar estatísticas do time:", err);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0d0f12] font-['Archivo_Narrow'] text-[#e2e2e8] p-4 md:p-8 relative selection:bg-[#00d2fd]/30 selection:text-[#00d2fd]">
@@ -134,7 +133,7 @@ export function Dashboard() {
                   : "text-[#8b90a0] hover:text-[#e2e2e8]"
               }`}
             >
-              Manage Squads ({favoriteIds.length})
+              Active Club ({favoriteTeam ? 1 : 0})
             </button>
           </div>
         </header>
@@ -149,86 +148,89 @@ export function Dashboard() {
                 Active Team Monitoring
               </h2>
 
-              {favoritedTeams.length === 0 ? (
+              {!favoriteTeam ? (
                 <div className="bg-[#14171c] border border-dashed border-[#414755]/40 p-12 text-center space-y-4">
                   <span className="material-symbols-outlined text-[#414755] text-5xl">
                     monitoring
                   </span>
                   <p className="text-sm text-[#8b90a0] max-w-xs mx-auto">
-                    No squads currently locked into the system telemetry array.
-                    Switch to the management tab to initialize tracking.
+                    No main club selected in system memory. Select your main
+                    club to start receiving live telemetry feeds.
                   </p>
-                  <button
-                    onClick={() => setActiveTab("selector")}
-                    className="px-4 py-2 bg-[#00d2fd]/10 border border-[#00d2fd]/30 text-[#00d2fd] text-xs font-bold uppercase tracking-widest hover:bg-[#00d2fd]/20 transition-all cursor-pointer"
-                  >
-                    Link Favorites
-                  </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {favoritedTeams.map((team) => (
-                    <div
-                      key={team.id}
-                      className="bg-[#14171c] border border-[#414755]/30 p-6 relative group transition-all duration-300 hover:border-[#4b8eff]/50"
-                    >
-                      <div className="absolute top-0 left-0 w-[2px] h-0 bg-[#4b8eff] transition-all duration-300 group-hover:h-full"></div>
+                <div className="bg-[#14171c] border border-[#00d2fd]/40 p-6 relative group transition-all duration-300 hover:border-[#00d2fd] shadow-xl shadow-[#00d2fd]/5">
+                  <div className="absolute top-0 left-0 w-[2px] h-full bg-[#00d2fd]"></div>
 
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-[#0d0f12] border border-[#414755]/30 flex items-center justify-center text-[#00d2fd]">
-                            <span className="material-symbols-outlined text-xl">
-                              {team.logo}
-                            </span>
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-base tracking-wide uppercase">
-                              {team.name}
-                            </h3>
-                            <span className="text-[10px] text-[#8b90a0] uppercase tracking-wider font-semibold">
-                              {team.league}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-xs font-black bg-[#0d0f12] border border-[#414755]/20 px-2 py-0.5 text-[#e2e2e8]">
-                          {team.tag}
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-[#0d0f12] border border-[#00d2fd]/30 p-2 flex items-center justify-center">
+                        {favoriteTeam.badgeUrl ? (
+                          <img
+                            src={favoriteTeam.badgeUrl}
+                            alt={favoriteTeam.name}
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <span className="material-symbols-outlined text-[#00d2fd] text-2xl">
+                            sports_soccer
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-black text-xl tracking-wide uppercase text-[#e2e2e8]">
+                          {favoriteTeam.name}
+                        </h3>
+                        <span className="text-xs text-[#00d2fd] uppercase tracking-wider font-bold">
+                          {favoriteTeam.league ||
+                            favoriteTeam.country ||
+                            "MAIN CLUB"}
                         </span>
                       </div>
+                    </div>
+                    <span className="text-[10px] font-black bg-[#00d2fd]/10 border border-[#00d2fd]/30 px-2 py-1 text-[#00d2fd] uppercase tracking-widest">
+                      API LINKED
+                    </span>
+                  </div>
 
-                      {/* Performance Indicators */}
-                      <div className="grid grid-cols-3 gap-2 border-t border-[#414755]/20 pt-4 text-center">
-                        <div className="bg-[#0d0f12]/50 p-2 border border-[#414755]/10">
-                          <span className="block text-[10px] font-bold text-[#8b90a0] uppercase tracking-wider">
-                            Win Rate
-                          </span>
-                          <span className="text-lg font-black text-[#00d2fd]">
-                            {team.stats.winRate}
-                          </span>
-                        </div>
-                        <div className="bg-[#0d0f12]/50 p-2 border border-[#414755]/10">
-                          <span className="block text-[10px] font-bold text-[#8b90a0] uppercase tracking-wider">
-                            Goals
-                          </span>
-                          <span className="text-lg font-black text-[#4b8eff]">
-                            {team.stats.goalsScored}
-                          </span>
-                        </div>
-                        <div className="bg-[#0d0f12]/50 p-2 border border-[#414755]/10">
-                          <span className="block text-[10px] font-bold text-[#8b90a0] uppercase tracking-wider">
-                            C. Sheets
-                          </span>
-                          <span className="text-lg font-black text-[#e2e2e8]">
-                            {team.stats.cleanSheets}
-                          </span>
-                        </div>
+                  {/* Performance Indicators */}
+                  {isLoadingStats ? (
+                    <div className="py-8 text-center text-xs text-[#00d2fd] animate-pulse">
+                      Syncing match statistics from API-Sports...
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3 border-t border-[#414755]/30 pt-5 text-center">
+                      <div className="bg-[#0d0f12]/80 p-3 border border-[#414755]/20">
+                        <span className="block text-[10px] font-bold text-[#8b90a0] uppercase tracking-wider mb-1">
+                          Win Rate
+                        </span>
+                        <span className="text-xl font-black text-[#00d2fd]">
+                          {favoriteTeam.stats?.winRate || "N/A"}
+                        </span>
+                      </div>
+                      <div className="bg-[#0d0f12]/80 p-3 border border-[#414755]/20">
+                        <span className="block text-[10px] font-bold text-[#8b90a0] uppercase tracking-wider mb-1">
+                          Goals
+                        </span>
+                        <span className="text-xl font-black text-[#4b8eff]">
+                          {favoriteTeam.stats?.goalsScored ?? "N/A"}
+                        </span>
+                      </div>
+                      <div className="bg-[#0d0f12]/80 p-3 border border-[#414755]/20">
+                        <span className="block text-[10px] font-bold text-[#8b90a0] uppercase tracking-wider mb-1">
+                          C. Sheets
+                        </span>
+                        <span className="text-xl font-black text-[#e2e2e8]">
+                          {favoriteTeam.stats?.cleanSheets ?? "N/A"}
+                        </span>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Right Column: Algorithmic Match Simulator Access / Quick Stats */}
+            {/* Right Column: Predictive Operations */}
             <div className="space-y-6">
               <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#8b90a0] flex items-center gap-2">
                 <span className="w-2 h-2 bg-[#4b8eff] rounded-full"></span>
@@ -256,78 +258,31 @@ export function Dashboard() {
           </div>
         )}
 
-        {/* TAB 2: INTERACTIVE FAVORITE SELECTOR */}
+        {/* TAB 2: ACTIVE CLUB CONTROL */}
         {activeTab === "selector" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold uppercase tracking-tight">
-                  Database Squad Directory
-                </h2>
-                <p className="text-xs text-[#8b90a0]">
-                  Toggle tracking switches to stream network feeds onto your
-                  tactical workspace.
-                </p>
+          <div className="bg-[#14171c] border border-[#414755]/30 p-6 space-y-4">
+            <h2 className="text-lg font-bold uppercase tracking-tight">
+              Selected Club Configuration
+            </h2>
+            {favoriteTeam ? (
+              <div className="flex items-center gap-4 bg-[#0d0f12] p-4 border border-[#00d2fd]/30">
+                <img
+                  src={favoriteTeam.badgeUrl}
+                  alt={favoriteTeam.name}
+                  className="w-12 h-12 object-contain"
+                />
+                <div>
+                  <p className="font-bold text-sm text-[#e2e2e8] uppercase">
+                    {favoriteTeam.name}
+                  </p>
+                  <p className="text-xs text-[#8b90a0]">
+                    ID: {favoriteTeam.id} | Country: {favoriteTeam.country}
+                  </p>
+                </div>
               </div>
-              <div className="text-xs font-mono text-[#8b90a0] bg-[#14171c] border border-[#414755]/30 px-3 py-1.5 self-start">
-                INDEXED_ITEMS:{" "}
-                <span className="text-[#00d2fd]">{AVAILABLE_TEAMS.length}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {AVAILABLE_TEAMS.map((team) => {
-                const isFavorited = favoriteIds.includes(team.id);
-                return (
-                  <div
-                    key={team.id}
-                    onClick={() => toggleFavorite(team.id)}
-                    className={`border p-5 flex items-center justify-between transition-all duration-200 cursor-pointer select-none group ${
-                      isFavorited
-                        ? "bg-[#00d2fd]/5 border-[#00d2fd] shadow-md shadow-[#00d2fd]/5"
-                        : "bg-[#14171c] border-[#414755]/30 hover:border-[#8b90a0]/50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div
-                        className={`w-9 h-9 border flex items-center justify-center transition-colors ${
-                          isFavorited
-                            ? "bg-[#00d2fd]/20 border-[#00d2fd] text-[#00d2fd]"
-                            : "bg-[#0d0f12] border-[#414755]/40 text-[#414755] group-hover:text-[#8b90a0]"
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-lg">
-                          {team.logo}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm tracking-wide uppercase text-[#e2e2e8]">
-                          {team.name}
-                        </h3>
-                        <p className="text-[10px] text-[#8b90a0] uppercase tracking-wider font-semibold">
-                          {team.league}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Status Toggle Pin */}
-                    <div
-                      className={`w-5 h-5 border flex items-center justify-center transition-all ${
-                        isFavorited
-                          ? "border-[#00d2fd] bg-[#00d2fd] text-[#001a41]"
-                          : "border-[#414755]/60 bg-transparent text-transparent group-hover:border-[#8b90a0]"
-                      }`}
-                    >
-                      {isFavorited && (
-                        <span className="material-symbols-outlined text-xs font-black">
-                          done
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            ) : (
+              <p className="text-xs text-[#8b90a0]">No active club assigned.</p>
+            )}
           </div>
         )}
       </div>
