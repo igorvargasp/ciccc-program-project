@@ -15,94 +15,6 @@ interface SelectFavoriteTeamModalProps {
   onClose?: () => void;
 }
 
-// Lista local para garantir funcionamento mesmo se a cota da API zerar
-const POPULAR_TEAMS: Team[] = [
-  {
-    id: 127,
-    name: "Flamengo",
-    country: "Brazil",
-    badgeUrl: "https://media.api-sports.io/football/teams/127.png",
-  },
-  {
-    id: 128,
-    name: "Santos",
-    country: "Brazil",
-    badgeUrl: "https://media.api-sports.io/football/teams/128.png",
-  },
-  {
-    id: 121,
-    name: "Palmeiras",
-    country: "Brazil",
-    badgeUrl: "https://media.api-sports.io/football/teams/121.png",
-  },
-  {
-    id: 126,
-    name: "Sao Paulo",
-    country: "Brazil",
-    badgeUrl: "https://media.api-sports.io/football/teams/126.png",
-  },
-  {
-    id: 131,
-    name: "Corinthians",
-    country: "Brazil",
-    badgeUrl: "https://media.api-sports.io/football/teams/131.png",
-  },
-  {
-    id: 130,
-    name: "Gremio",
-    country: "Brazil",
-    badgeUrl: "https://media.api-sports.io/football/teams/130.png",
-  },
-  {
-    id: 133,
-    name: "Vasco da Gama",
-    country: "Brazil",
-    badgeUrl: "https://media.api-sports.io/football/teams/133.png",
-  },
-  {
-    id: 1062,
-    name: "Atletico-MG",
-    country: "Brazil",
-    badgeUrl: "https://media.api-sports.io/football/teams/1062.png",
-  },
-  {
-    id: 541,
-    name: "Real Madrid",
-    country: "Spain",
-    badgeUrl: "https://media.api-sports.io/football/teams/541.png",
-  },
-  {
-    id: 529,
-    name: "Barcelona",
-    country: "Spain",
-    badgeUrl: "https://media.api-sports.io/football/teams/529.png",
-  },
-  {
-    id: 33,
-    name: "Manchester United",
-    country: "England",
-    badgeUrl: "https://media.api-sports.io/football/teams/33.png",
-  },
-  {
-    id: 40,
-    name: "Liverpool",
-    country: "England",
-    badgeUrl: "https://media.api-sports.io/football/teams/40.png",
-  },
-  {
-    id: 42,
-    name: "Arsenal",
-    country: "England",
-    badgeUrl: "https://media.api-sports.io/football/teams/42.png",
-  },
-  {
-    id: 505,
-    name: "Inter",
-    country: "Italy",
-    badgeUrl: "https://media.api-sports.io/football/teams/505.png",
-  },
-];
-
 export function SelectFavoriteTeamModal({
   isOpen,
   isFirstTime = false,
@@ -112,8 +24,9 @@ export function SelectFavoriteTeamModal({
 }: SelectFavoriteTeamModalProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(currentTeam);
-  const [searchResults, setSearchResults] = useState<Team[]>(POPULAR_TEAMS);
+  const [searchResults, setSearchResults] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentTeam) {
@@ -122,75 +35,54 @@ export function SelectFavoriteTeamModal({
   }, [currentTeam]);
 
   useEffect(() => {
-    const cleanSearch = searchTerm.trim().toLowerCase();
+    const cleanSearch = searchTerm.trim();
 
-    if (cleanSearch.length < 2) {
-      setSearchResults(POPULAR_TEAMS);
+    if (cleanSearch.length < 3) {
+      setSearchResults([]);
       setIsLoading(false);
+      setErrorMessage(null);
       return;
     }
 
     const timer = setTimeout(async () => {
       setIsLoading(true);
+      setErrorMessage(null);
 
       try {
-        const apiKey = import.meta.env.VITE_FOOTBALL_API_KEY;
+        const baseUrl =
+          import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
+        // Chama a rota padrão do backend que busca no banco de dados local
         const res = await fetch(
-          `https://v3.football.api-sports.io/teams?search=${encodeURIComponent(cleanSearch)}`,
-          {
-            method: "GET",
-            headers: {
-              "x-apisports-key": apiKey,
-            },
-          },
+          `${baseUrl}/api/teams?search=${encodeURIComponent(cleanSearch)}`,
         );
 
-        const data = await res.json();
+        const json = await res.json();
 
-        // Se a API retornar erro de cota/chave, faz busca local no fallback em vez de quebrar
-        if (data.errors && Object.keys(data.errors).length > 0) {
-          console.warn(
-            "API Error / Rate limit hit. Using local search fallback.",
-            data.errors,
-          );
-          const localFiltered = POPULAR_TEAMS.filter((t) =>
-            t.name.toLowerCase().includes(cleanSearch),
-          );
-          setSearchResults(localFiltered);
-          return;
+        if (!res.ok) {
+          throw new Error(json.error || "Erro ao buscar clubes no servidor.");
         }
 
-        // Sucesso na API
-        if (
-          data.response &&
-          Array.isArray(data.response) &&
-          data.response.length > 0
-        ) {
-          const formattedTeams: Team[] = data.response.map((item: any) => ({
-            id: item.team.id,
-            name: item.team.name,
-            badgeUrl: item.team.logo,
-            country: item.team.country,
+        // O backend do seu amigo retorna os dados dentro de 'data'
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+          const formattedTeams: Team[] = json.data.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            badgeUrl: item.badgeUrl || item.logo, // Ajuste conforme o nome da coluna no seu schema do banco
+            country: item.country,
           }));
           setSearchResults(formattedTeams);
         } else {
-          // Se a API respondeu mas não achou nada, tenta filtro local antes de zerar
-          const localFiltered = POPULAR_TEAMS.filter((t) =>
-            t.name.toLowerCase().includes(cleanSearch),
-          );
-          setSearchResults(localFiltered);
+          setSearchResults([]);
         }
       } catch (err) {
-        console.error("Erro na requisição. Aplicando fallback local:", err);
-        const localFiltered = POPULAR_TEAMS.filter((t) =>
-          t.name.toLowerCase().includes(cleanSearch),
-        );
-        setSearchResults(localFiltered);
+        console.error("Erro na requisição:", err);
+        setErrorMessage("Erro de conexão ao buscar os times pelo backend.");
+        setSearchResults([]);
       } finally {
         setIsLoading(false);
       }
-    }, 400);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -200,6 +92,7 @@ export function SelectFavoriteTeamModal({
   const handleConfirm = () => {
     if (!selectedTeam) return;
     localStorage.setItem("favorite_team", JSON.stringify(selectedTeam));
+    window.dispatchEvent(new Event("favoriteTeamChanged"));
     onConfirm(selectedTeam);
   };
 
@@ -217,7 +110,7 @@ export function SelectFavoriteTeamModal({
               {isFirstTime ? "Select Your Main Club" : "Change Favorite Team"}
             </h2>
             <p className="text-xs text-[#8b90a0] mt-1">
-              Search any club worldwide to sync telemetry and match data.
+              Search any club worldwide directly from the database.
             </p>
           </div>
 
@@ -243,7 +136,7 @@ export function SelectFavoriteTeamModal({
             </span>
             <input
               type="text"
-              placeholder="e.g. Palmeiras, Santos, Real Madrid..."
+              placeholder="Type at least 3 letters (e.g. Real Madrid, Flamengo)..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-[#0d0f12] border border-[#414755]/40 py-3 pl-11 pr-4 text-[#e2e2e8] placeholder-[#8b90a0]/30 focus:outline-none focus:border-[#00d2fd] text-sm"
@@ -251,18 +144,34 @@ export function SelectFavoriteTeamModal({
           </div>
         </div>
 
+        {/* Mensagem de Erro */}
+        {errorMessage && (
+          <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+            {errorMessage}
+          </div>
+        )}
+
         {/* Lista de Resultados */}
         <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
           {isLoading && (
             <div className="flex items-center justify-center gap-2 py-8 text-xs text-[#00d2fd]">
               <span className="animate-spin rounded-full h-4 w-4 border-2 border-[#00d2fd] border-t-transparent"></span>
-              Searching database...
+              Querying database...
             </div>
           )}
 
-          {!isLoading && searchResults.length === 0 && (
+          {!isLoading &&
+            searchTerm.trim().length >= 3 &&
+            searchResults.length === 0 &&
+            !errorMessage && (
+              <p className="text-xs text-[#8b90a0] text-center py-8">
+                No clubs found matching "{searchTerm}".
+              </p>
+            )}
+
+          {!isLoading && searchTerm.trim().length < 3 && (
             <p className="text-xs text-[#8b90a0] text-center py-8">
-              No clubs found for "{searchTerm}".
+              Type at least 3 letters to search...
             </p>
           )}
 
