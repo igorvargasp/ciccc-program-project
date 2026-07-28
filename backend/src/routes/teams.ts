@@ -39,7 +39,11 @@ teamsRouter.get(
 teamsRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const [team] = await db.select().from(teams).where(eq(teams.id, req.params.id)).limit(1);
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.id, req.params.id))
+      .limit(1);
     if (!team) throw notFound("Team");
     res.json({ data: team });
   }),
@@ -56,5 +60,21 @@ teamsRouter.get(
       .orderBy(asc(players.shirtNumber));
 
     res.json({ data: squad });
+  }),
+);
+
+// GET /api/teams/:id/matches — next matches
+teamsRouter.get(
+  "/:id/matches",
+  asyncHandler(async (req, res) => {
+    res.json({ data: [] });
+  }),
+);
+
+// GET /api/teams/:id/standings — standings table
+teamsRouter.get(
+  "/:id/standings",
+  asyncHandler(async (req, res) => {
+    res.json({ data: [] });
   }),
 );
