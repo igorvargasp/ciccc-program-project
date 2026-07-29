@@ -52,7 +52,6 @@ export function SelectFavoriteTeamModal({
         const baseUrl =
           import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
-        // Chama a rota padrão do backend que busca no banco de dados local
         const res = await fetch(
           `${baseUrl}/api/teams?search=${encodeURIComponent(cleanSearch)}`,
         );
@@ -60,15 +59,16 @@ export function SelectFavoriteTeamModal({
         const json = await res.json();
 
         if (!res.ok) {
-          throw new Error(json.error || "Erro ao buscar clubes no servidor.");
+          throw new Error(
+            json.error || "Error retrieving clubs from the server.",
+          );
         }
 
-        // O backend do seu amigo retorna os dados dentro de 'data'
         if (json.data && Array.isArray(json.data) && json.data.length > 0) {
           const formattedTeams: Team[] = json.data.map((item: any) => ({
             id: item.id,
             name: item.name,
-            badgeUrl: item.badgeUrl || item.logo, // Ajuste conforme o nome da coluna no seu schema do banco
+            badgeUrl: item.badgeUrl || item.logo,
             country: item.country,
           }));
           setSearchResults(formattedTeams);
@@ -76,8 +76,10 @@ export function SelectFavoriteTeamModal({
           setSearchResults([]);
         }
       } catch (err) {
-        console.error("Erro na requisição:", err);
-        setErrorMessage("Erro de conexão ao buscar os times pelo backend.");
+        console.error("Error in the request:", err);
+        setErrorMessage(
+          "Connection error while retrieving the teams from the backend.",
+        );
         setSearchResults([]);
       } finally {
         setIsLoading(false);
@@ -125,7 +127,7 @@ export function SelectFavoriteTeamModal({
           )}
         </div>
 
-        {/* Input de Busca */}
+        {/* Search input */}
         <div className="space-y-2">
           <label className="text-[11px] font-bold text-[#8b90a0] uppercase tracking-widest block">
             Search Any World Club
@@ -144,14 +146,14 @@ export function SelectFavoriteTeamModal({
           </div>
         </div>
 
-        {/* Mensagem de Erro */}
+        {/* Error Message */}
         {errorMessage && (
           <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
             {errorMessage}
           </div>
         )}
 
-        {/* Lista de Resultados */}
+        {/* List of Results */}
         <div className="max-h-60 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
           {isLoading && (
             <div className="flex items-center justify-center gap-2 py-8 text-xs text-[#00d2fd]">
@@ -222,7 +224,7 @@ export function SelectFavoriteTeamModal({
             })}
         </div>
 
-        {/* Botão de Confirmação */}
+        {/* Confirmation Button */}
         <button
           type="button"
           onClick={handleConfirm}

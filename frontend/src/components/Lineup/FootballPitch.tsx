@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 
-// Definição das formações e posições (coordenadas x/y percentuais no campo)
 const FORMATIONS: Record<string, { role: string; x: number; y: number }[]> = {
   "4-3-3": [
     { role: "GK", x: 50, y: 88 },
@@ -66,23 +65,23 @@ export default function FootballPitch({
 
   return (
     <div className="relative w-full max-w-4xl h-[650px] bg-gradient-to-b from-[#0e3a2f] to-[#08241e] border-2 border-[#00d2fd]/40 rounded-xl overflow-hidden shadow-2xl flex flex-col items-center justify-center p-4">
-      {/* Marcações do Campo (Estilo Tático) */}
+      {/* Field Markings (Tactical Style) */}
       <div className="absolute inset-4 border border-white/25 rounded pointer-events-none">
-        {/* Meio de campo */}
+        {/* Midfield */}
         <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-white/25"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-white/25 rounded-full"></div>
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-white/40 rounded-full"></div>
 
-        {/* Área Superior (Ataque) */}
+        {/* Forward (Attack) */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-24 border-b border-x border-white/25"></div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-10 border-b border-x border-white/25"></div>
 
-        {/* Área Inferior (Defesa) */}
+        {/* Lower Area (Defense) */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-72 h-24 border-t border-x border-white/25"></div>
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-10 border-t border-x border-white/25"></div>
       </div>
 
-      {/* Renderização dos Slots de Jogadores */}
+      {/* Rendering of Player Slots */}
       <div className="absolute inset-0">
         {currentFormation.map((pos, index) => {
           const player = lineupPlayers[index];

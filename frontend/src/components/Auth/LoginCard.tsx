@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 interface LoginCardProps {
@@ -14,68 +14,6 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Referência para o player do YouTube e ID do container
-  const playerRef = useRef<any>(null);
-  const containerId = "youtube-background-player";
-
-  useEffect(() => {
-    // Inicializa o player quando a API do YouTube estiver pronta
-    (window as any).onYouTubeIframeAPIReady = () => {
-      playerRef.current = new (window as any).YT.Player(containerId, {
-        videoId: "Y1VNMJAoPeQ",
-        playerVars: {
-          autoplay: 1,
-          mute: 1,
-          controls: 0,
-          showinfo: 0,
-          rel: 0,
-          modestbranding: 1,
-          iv_load_policy: 3,
-          playsinline: 1,
-          disablekb: 1,
-        },
-        events: {
-          onReady: (event: any) => {
-            event.target.playVideo();
-            startLoopCheck(event.target);
-          },
-          onStateChange: (event: any) => {
-            if (event.data === (window as any).YT.PlayerState.ENDED) {
-              event.target.seekTo(0);
-              event.target.playVideo();
-            }
-          },
-        },
-      });
-    };
-
-    // Injeta o script da API do YouTube de forma assíncrona
-    if (!document.getElementById("youtube-api-script")) {
-      const tag = document.createElement("script");
-      tag.id = "youtube-api-script";
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName("script")[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-    } else if ((window as any).YT && (window as any).YT.Player) {
-      (window as any).onYouTubeIframeAPIReady();
-    }
-
-    function startLoopCheck(player: any) {
-      const checkInterval = setInterval(() => {
-        if (player && typeof player.getCurrentTime === "function") {
-          const currentTime = player.getCurrentTime();
-          const duration = player.getDuration();
-
-          if (duration > 0 && currentTime >= duration - 1.5) {
-            player.seekTo(0);
-          }
-        }
-      }, 500);
-
-      return () => clearInterval(checkInterval);
-    }
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -87,7 +25,6 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
     setIsSubmitting(true);
 
     try {
-      // Chama o método de login do seu contexto de autenticação
       await login(email, password);
     } catch (error: unknown) {
       console.error("Login error:", error);
@@ -108,17 +45,22 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
         <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#0d0f12] via-[#0d0f12]/40 to-transparent"></div>
         <div className="absolute inset-0 z-10 bg-gradient-to-r from-transparent to-[#0d0f12]"></div>
 
-        {/* YouTube Video Background Layer Controlled via API */}
+        {/* Local Video Background Layer */}
         <div className="absolute inset-0 z-0 opacity-25 mix-blend-screen scale-110 pointer-events-none select-none">
-          <div
-            id={containerId}
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
             className="w-full h-full object-cover aspect-video"
             style={{
-              height: "110%",
+              height: "45%",
               width: "100%",
-              transform: "translateY(-5%)",
             }}
-          />
+          >
+            <source src="/aliscorevideo.mp4" type="video/mp4" />
+            Your browser does not support video tags.
+          </video>
         </div>
 
         {/* Matrix Tech Grid Overlay */}

@@ -33,7 +33,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onSimulate }) => {
 
   return (
     <div className="w-full bg-[#0c0e12] border border-[#414755]/30 hover:border-[#00d2fd]/50 p-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-all duration-200 group">
-      {/* Horário ou Minuto do Jogo */}
+      {/* Game Time or Minute */}
       <div className="flex items-center gap-3 shrink-0">
         {isLive ? (
           <div className="flex items-center gap-1.5 bg-red-600/10 border border-red-500/30 px-2.5 py-1 text-[11px] font-bold text-red-500 tracking-wider uppercase animate-pulse">
@@ -54,9 +54,9 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onSimulate }) => {
         )}
       </div>
 
-      {/* Confronto centralizado (Times e Placar) */}
+      {/* Head-to-Head Matchup (Teams and Scores) */}
       <div className="flex-1 grid grid-cols-7 items-center w-full max-w-xl mx-auto">
-        {/* Mandante */}
+        {/* Home Team */}
         <div className="col-span-3 flex items-center justify-end gap-3 text-right">
           <span className="text-sm font-semibold tracking-wide text-[#e2e2e8] group-hover:text-[#00d2fd] transition-colors truncate">
             {match.homeTeam.name}
@@ -68,7 +68,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onSimulate }) => {
           />
         </div>
 
-        {/* Placar / VS */}
+        {/* Score / VS */}
         <div className="col-span-1 flex items-center justify-center bg-[#111317] border border-[#414755]/20 h-8 mx-2 px-2 font-black tracking-widest text-sm text-[#00d2fd]">
           {isFinished || isLive ? (
             <span>
@@ -79,7 +79,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onSimulate }) => {
           )}
         </div>
 
-        {/* Visitante */}
+        {/* Away Team */}
         <div className="col-span-3 flex items-center justify-start gap-3 text-left">
           <img
             src={match.awayTeam.logo}
@@ -92,7 +92,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onSimulate }) => {
         </div>
       </div>
 
-      {/* Ação: Simular Partida */}
+      {/* Action: Simulate Game */}
       <div className="shrink-0 w-full sm:w-auto flex justify-end">
         <button
           onClick={() => onSimulate?.(match)}

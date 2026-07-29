@@ -24,7 +24,6 @@ export default function SaveLineupModal({
     e.preventDefault();
     if (!title.trim()) return;
     onSave(title, currentFormation);
-    // Simulação de geração de link de compartilhamento único
     setShareableLink(
       `https://operatorsystem.app/lineup/share/${Math.random().toString(36).substring(7)}`,
     );

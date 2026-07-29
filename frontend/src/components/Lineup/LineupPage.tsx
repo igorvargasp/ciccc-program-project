@@ -15,7 +15,7 @@ export function LineupPage() {
   );
   const [, setSelectedSlotIndex] = useState<number | null>(null);
 
-  // Estados para o Técnico
+  // States for the Coach
   const [coachName, setCoachName] = useState<string>("Coach Name");
   const [coachPhoto, setCoachPhoto] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,7 +25,7 @@ export function LineupPage() {
     console.log(`Slot selecionado: ${index}`);
   };
 
-  // Função para lidar com o arquivo de imagem do técnico (seleção por clique ou drag and drop)
+  // Function for handling the technician's image file (select by clicking or drag-and-drop)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -49,7 +49,7 @@ export function LineupPage() {
 
   return (
     <div className="space-y-6">
-      {/* Cabeçalho com o Seletor de Formação */}
+      {/* Header with the Training Selector */}
       <div className="flex flex-col md:flex-row justify-between items-center bg-[#14171c] border border-[#414755]/30 rounded-xl p-5 gap-4">
         <div>
           <h2 className="text-sm font-black text-[#00d2fd] uppercase tracking-[0.2em]">
@@ -60,7 +60,7 @@ export function LineupPage() {
           </p>
         </div>
 
-        {/* Seletor de Formação Tática */}
+        {/* Tactical Formation Selector */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-[#8b90a0] uppercase">
             Formation:
@@ -84,9 +84,9 @@ export function LineupPage() {
         </div>
       </div>
 
-      {/* Área principal dividida entre o Campo e a Beira do Campo (Técnico) */}
+      {/* Main area divided between the Field and the Sidelines (Coach) */}
       <div className="flex flex-col lg:flex-row items-center justify-center gap-6">
-        {/* Campo de Futebol Tático */}
+        {/* Tactical Soccer Field */}
         <div className="flex justify-center flex-1 w-full">
           <FootballPitch
             formation={formation}
@@ -95,7 +95,7 @@ export function LineupPage() {
           />
         </div>
 
-        {/* Bloco do Técnico (Beira do Campo / Sideline) */}
+        {/* Coach's Box (Sideline) */}
         <div className="w-full lg:w-72 bg-[#14171c] border border-[#414755]/30 rounded-xl p-5 flex flex-col items-center gap-4 shadow-xl">
           <div className="w-full text-left">
             <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em]">
@@ -104,7 +104,7 @@ export function LineupPage() {
             <p className="text-[11px] text-[#8b90a0]">Head Coach</p>
           </div>
 
-          {/* Área de Drop / Upload da Foto do Técnico */}
+          {/* Coach Photo Drop-off / Upload Area */}
           <div
             onClick={() => fileInputRef.current?.click()}
             onDrop={handleDrop}
@@ -134,7 +134,7 @@ export function LineupPage() {
             />
           </div>
 
-          {/* Input para Editar o Nome do Técnico */}
+          {/* Input for Editing the coach's Name */}
           <div className="w-full space-y-1">
             <label className="text-[10px] font-bold text-[#8b90a0] uppercase tracking-wider">
               Coach Name

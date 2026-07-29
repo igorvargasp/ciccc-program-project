@@ -13,7 +13,7 @@ import { TermsPage } from "./pages/TermsPage";
 import { Dashboard } from "./components/Dashboard/FavoriteTeamBanner";
 
 // MATCHES PAGE:
-import { MatchesTabs } from "./components/Matches/MatchesTabs";
+import { UpcomingMatches } from "./components/Matches/UpcomingMatches";
 
 // STANDINGS PAGE:
 import { StandingsTable } from "./components/Standings/StandingsTable";
@@ -46,7 +46,7 @@ export function App() {
   );
 
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // Estado do menu lateral (Burger)
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Burguer Menu
 
   const [savedLineups, setSavedLineups] = useState<SavedLineup[]>([]);
 
@@ -56,7 +56,7 @@ export function App() {
       try {
         setSavedLineups(JSON.parse(loadedLineups));
       } catch (e) {
-        console.error("Erro ao carregar escalações", e);
+        console.error("Error loading lineups", e);
       }
     }
   }, []);
@@ -122,7 +122,7 @@ export function App() {
               Log Out
             </button>
 
-            {/* Botão Burger Menu */}
+            {/* Burger Menu Button */}
             <button
               onClick={() => setIsMenuOpen(true)}
               className="p-2 bg-[#0d0f12] border border-[#414755]/30 text-[#00d2fd] hover:border-[#00d2fd] transition-all cursor-pointer flex items-center justify-center"
@@ -132,7 +132,7 @@ export function App() {
           </div>
         </header>
 
-        {/* Menu Lateral / Drawer */}
+        {/* Right Menu / Drawer */}
         {isMenuOpen && (
           <div
             className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity"
@@ -196,7 +196,7 @@ export function App() {
           </div>
         )}
 
-        {/* Gerenciador de Páginas por Rotas */}
+        {/* Routes */}
         <main className="p-6 max-w-7xl mx-auto space-y-6">
           <Routes>
             <Route
@@ -205,7 +205,7 @@ export function App() {
                 <div className="space-y-6">
                   <Dashboard onOpenTeamModal={() => setIsTeamModalOpen(true)} />
 
-                  {/* Seção de Dream Teams Salvos */}
+                  {/* Saved Dream Teams */}
                   <section className="bg-[#14171c] border border-[#414755]/30 rounded-xl p-5 shadow-lg">
                     <div className="flex items-center justify-between mb-4 border-b border-[#414755]/30 pb-3">
                       <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em] flex items-center gap-2">
@@ -267,7 +267,7 @@ export function App() {
 
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     <div className="lg:col-span-12 space-y-6">
-                      <MatchesTabs />
+                      <UpcomingMatches />
                     </div>
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export function App() {
                     <h2 className="text-sm font-black text-[#00d2fd] uppercase tracking-[0.2em] mb-4">
                       Matches Page
                     </h2>
-                    <MatchesTabs />
+                    <UpcomingMatches />
                   </div>
                 </div>
               }

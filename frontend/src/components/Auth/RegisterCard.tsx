@@ -5,7 +5,7 @@ import { authClient } from "../../auth";
 interface RegisterPageProps {
   onSwitchToLogin?: () => void;
   onOpenTerms?: () => void;
-  onSuccessRegister?: () => void; // Prop opcional para evitar crash
+  onSuccessRegister?: () => void;
 }
 
 interface AppFeature {
@@ -109,7 +109,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 }) => {
   const { login } = useAuth();
 
-  // Estados do Formulário
+  // Form States
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
@@ -118,7 +118,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Estados de Interface
+  // Interface States
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [currentFeature, setCurrentFeature] = useState(0);
@@ -244,10 +244,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         throw new Error(signUpRes.error.message || "Sign up failed.");
       }
 
-      // Salva a sessão localmente
       login(email, fullName);
 
-      // Execução 100% segura sem lançar exceção caso a prop não venha
       if (onSuccessRegister) {
         onSuccessRegister();
       } else if (onSwitchToLogin) {
@@ -256,7 +254,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     } catch (error: unknown) {
       console.error("Registration error:", error);
 
-      // Ignora o erro se for apenas um glitch do callback
       const message =
         error instanceof Error
           ? error.message
@@ -313,7 +310,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       </header>
 
       <main className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8 mt-24 relative z-10">
-        {/* Carrossel da Esquerda */}
+        {/* Left Carrossel */}
         <section className="lg:col-span-5 hidden lg:flex flex-col justify-center space-y-4 pr-4">
           <div className="space-y-3">
             <h1 className="text-5xl font-bold text-[#e2e2e8] leading-none tracking-tight">
@@ -417,8 +414,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           </div>
         </section>
 
-        {/* Formulário de Registro Directo */}
-        <section className="lg:col-span-7 flex items-center justify-center">
+        {/* Register Form */}
+        <section className="lg:col-span-7 flex items-   center justify-center">
           <div className="w-full max-w-xl bg-[#1e2024] border border-[#414755] p-8 md:p-10 shadow-2xl relative z-20">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#00d2fd] via-[#4b8eff] to-transparent"></div>
             <div className="mb-8">
