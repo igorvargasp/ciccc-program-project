@@ -158,9 +158,11 @@ function StandingsTable({ teamId }: { teamId?: string | number }) {
           );
         }
 
-        const standingsData =
-          json.data || json.standings || json.table || json || [];
-        setStandings(Array.isArray(standingsData) ? standingsData : []);
+        // API returns [{ competition, seasonId, label, isCurrent, table: [...] }].
+        // Pull the current (or first) competition group's table rows.
+        const groups = Array.isArray(json.data) ? json.data : [];
+        const group = groups.find((g: any) => g.isCurrent) ?? groups[0];
+        setStandings(Array.isArray(group?.table) ? group.table : []);
       } catch (err: any) {
         console.error("Erro ao carregar standings:", err);
         setError(err.message);
@@ -211,37 +213,43 @@ function StandingsTable({ teamId }: { teamId?: string | number }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#414755]/10 font-mono">
-              {standings.map((row, idx) => (
-                <tr
-                  key={row.rank || row.position || idx}
-                  className="hover:bg-[#0d0f12]/60 transition-colors"
-                >
-                  <td className="py-2.5 px-2 font-bold text-[#00d2fd]">
-                    {row.rank || row.position || idx + 1}
-                  </td>
-                  <td className="py-2.5 px-2 flex items-center gap-2 font-sans uppercase font-bold">
-                    {(row.teamLogo || row.logo || row.badge) && (
-                      <img
-                        src={row.teamLogo || row.logo || row.badge}
-                        alt=""
-                        className="w-4 h-4 object-contain"
-                      />
-                    )}
-                    <span className="truncate max-w-[120px] sm:max-w-xs">
-                      {row.teamName || row.name || row.club}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-2 text-center text-[#8b90a0]">
-                    {row.played ?? row.matchesPlayed ?? 0}
-                  </td>
-                  <td className="py-2.5 px-2 text-center text-[#8b90a0]">
-                    {row.goalDiff ?? row.goalDifference ?? 0}
-                  </td>
-                  <td className="py-2.5 px-2 text-right font-bold text-[#e2e2e8]">
-                    {row.points ?? 0}
-                  </td>
-                </tr>
-              ))}
+              {standings.map((row, idx) => {
+                const goalDiff = (row.goalsFor ?? 0) - (row.goalsAgainst ?? 0);
+                const isCurrentTeam = String(row.team?.id) === String(teamId);
+                return (
+                  <tr
+                    key={row.team?.id ?? row.position ?? idx}
+                    className={`hover:bg-[#0d0f12]/60 transition-colors ${
+                      isCurrentTeam ? "bg-[#4b8eff]/10" : ""
+                    }`}
+                  >
+                    <td className="py-2.5 px-2 font-bold text-[#00d2fd]">
+                      {row.position ?? idx + 1}
+                    </td>
+                    <td className="py-2.5 px-2 flex items-center gap-2 font-sans uppercase font-bold">
+                      {row.team?.crestUrl && (
+                        <img
+                          src={row.team.crestUrl}
+                          alt=""
+                          className="w-4 h-4 object-contain"
+                        />
+                      )}
+                      <span className="truncate max-w-[120px] sm:max-w-xs">
+                        {row.team?.name}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-2 text-center text-[#8b90a0]">
+                      {row.played ?? 0}
+                    </td>
+                    <td className="py-2.5 px-2 text-center text-[#8b90a0]">
+                      {goalDiff > 0 ? `+${goalDiff}` : goalDiff}
+                    </td>
+                    <td className="py-2.5 px-2 text-right font-bold text-[#e2e2e8]">
+                      {row.points ?? 0}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
