@@ -34,7 +34,7 @@ function UpcomingMatches({ teamId }: { teamId?: string | number }) {
       setError(null);
       try {
         const baseUrl =
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+          import.meta.env.VITE_API_BASE_URL || "";
         const res = await fetch(`${baseUrl}/api/teams/${teamId}/matches`);
         const json = await res.json();
 
@@ -148,7 +148,7 @@ function StandingsTable({ teamId }: { teamId?: string | number }) {
       setError(null);
       try {
         const baseUrl =
-          import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+          import.meta.env.VITE_API_BASE_URL || "";
         const res = await fetch(`${baseUrl}/api/teams/${teamId}/standings`);
         const json = await res.json();
 
@@ -279,7 +279,7 @@ function LiveSimulator({
     setError(null);
     try {
       const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+        import.meta.env.VITE_API_BASE_URL || "";
       const res = await fetch(`${baseUrl}/api/simulations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -441,7 +441,7 @@ export function Dashboard({ onOpenTeamModal }: DashboardProps) {
 
     try {
       const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+        import.meta.env.VITE_API_BASE_URL || "";
       const res = await fetch(`${baseUrl}/api/teams/${team.id}`);
       const json = await res.json();
 

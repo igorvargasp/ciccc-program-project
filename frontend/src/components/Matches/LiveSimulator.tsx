@@ -17,7 +17,7 @@ export function LiveSimulator({ teamId, teamName }: LiveSimulatorProps) {
     setError(null);
     try {
       const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+        import.meta.env.VITE_API_BASE_URL || "";
       const res = await fetch(`${baseUrl}/api/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

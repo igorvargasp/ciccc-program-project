@@ -2,7 +2,7 @@ import { Router } from "express";
 import { and, asc, eq, ilike } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
-import { players, teams } from "../db/schema.js";
+import { competitions, players, seasons, standings, teams } from "../db/schema.js";
 import { asyncHandler } from "../lib/async-handler.js";
 import { notFound } from "../lib/http-error.js";
 
@@ -63,18 +63,67 @@ teamsRouter.get(
   }),
 );
 
-// GET /api/teams/:id/matches — next matches
+// GET /api/teams/:id/matches — next matches (not implemented yet)
 teamsRouter.get(
   "/:id/matches",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (_req, res) => {
     res.json({ data: [] });
   }),
 );
 
-// GET /api/teams/:id/standings — standings table
+// GET /api/teams/:id/standings — the league table(s) the team competes in.
 teamsRouter.get(
   "/:id/standings",
   asyncHandler(async (req, res) => {
-    res.json({ data: [] });
+    const teamId = req.params.id;
+
+    const [team] = await db.select({ id: teams.id }).from(teams).where(eq(teams.id, teamId)).limit(1);
+    if (!team) throw notFound("Team");
+
+    const memberships = await db
+      .select({
+        seasonId: standings.seasonId,
+        label: seasons.label,
+        isCurrent: seasons.isCurrent,
+        competition: {
+          id: competitions.id,
+          name: competitions.name,
+          logoUrl: competitions.logoUrl,
+        },
+      })
+      .from(standings)
+      .innerJoin(seasons, eq(standings.seasonId, seasons.id))
+      .innerJoin(competitions, eq(seasons.competitionId, competitions.id))
+      .where(and(eq(standings.teamId, teamId), eq(standings.isSimulated, false)));
+
+    const result = await Promise.all(
+      memberships.map(async (m) => {
+        const table = await db
+          .select({
+            position: standings.position,
+            played: standings.played,
+            won: standings.won,
+            drawn: standings.drawn,
+            lost: standings.lost,
+            goalsFor: standings.goalsFor,
+            goalsAgainst: standings.goalsAgainst,
+            points: standings.points,
+            team: {
+              id: teams.id,
+              name: teams.name,
+              shortName: teams.shortName,
+              crestUrl: teams.crestUrl,
+            },
+          })
+          .from(standings)
+          .innerJoin(teams, eq(standings.teamId, teams.id))
+          .where(and(eq(standings.seasonId, m.seasonId), eq(standings.isSimulated, false)))
+          .orderBy(asc(standings.position));
+
+        return { competition: m.competition, seasonId: m.seasonId, label: m.label, isCurrent: m.isCurrent, table };
+      }),
+    );
+
+    res.json({ data: result });
   }),
 );
