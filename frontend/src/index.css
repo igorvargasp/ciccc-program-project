@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ── Light mode (default) ── */
+  :root {
+    --bg-app: 249 250 251;
+    --bg-surface: 255 255 255;
+    --bg-surface-2: 243 244 246;
+    --fg-primary: 15 17 18;
+    --fg-muted: 107 114 128;
+    --edge: 209 213 219;
+    /* Brand blue — 0 210 253 = #00d2fd */
+    --brand: 0 210 253;
+    --brand-hover: 0 184 221;
+  }
+
+  /* ── Dark mode ── */
+  .dark {
+    --bg-app: 8 9 10;
+    --bg-surface: 17 18 19;
+    --bg-surface-2: 25 27 29;
+    --fg-primary: 255 255 255;
+    --fg-muted: 139 143 149;
+    --edge: 255 255 255;
+    /* Brand stays the same in dark mode */
+    --brand: 0 210 253;
+    --brand-hover: 0 184 221;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-app text-foreground font-sans antialiased;
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  *,
+  ::before,
+  ::after {
+    border-color: rgb(var(--edge) / 0.12);
+  }
+
+  /* Thin scrollbars everywhere */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--edge) / 0.2) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgb(var(--edge) / 0.2);
+    border-radius: 2px;
+  }
+}

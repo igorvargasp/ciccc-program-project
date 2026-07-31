@@ -1,0 +1,152 @@
+{
+  "nav": {
+    "home": "Início",
+    "matches": "Jogos",
+    "competitions": "Competições",
+    "teams": "Times",
+    "players": "Jogadores",
+    "news": "Notícias",
+    "simulator": "Simulador",
+    "lineups": "Meus Escalados",
+    "notifications": "Notificações",
+    "profile": "Configurações"
+  },
+  "home": {
+    "title": "Smart Football Hub",
+    "subtitle": "Placar ao vivo, estatísticas, notícias e simulações — tudo em um só lugar.",
+    "liveMatches": "Ao Vivo",
+    "upcomingMatches": "Próximos Jogos",
+    "latestNews": "Últimas Notícias",
+    "seeAll": "Ver todos"
+  },
+  "search": {
+    "placeholder": "Buscar times, jogadores…"
+  },
+  "common": {
+    "noData": "Nenhum dado disponível",
+    "loading": "Carregando…",
+    "error": "Algo deu errado",
+    "seeAll": "Ver todos",
+    "back": "Voltar",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "unknown": "Desconhecido",
+    "vs": "x",
+    "goal_difference": "SG"
+  },
+  "settings": {
+    "theme": "Alternar tema",
+    "language": "Mudar idioma",
+    "title": "Configurações",
+    "appearance": "Aparência",
+    "darkMode": "Modo escuro",
+    "lightMode": "Modo claro",
+    "systemMode": "Sistema",
+    "lang_en": "English",
+    "lang_pt": "Português",
+    "notifications": "Notificações",
+    "notifyMatches": "Notificar sobre jogos ao vivo",
+    "notifyTeamNews": "Notificar sobre notícias do time",
+    "favoriteTeams": "Times Favoritos",
+    "account": "Conta",
+    "signIn": "Entre para salvar preferências",
+    "signOut": "Sair"
+  },
+  "matches": {
+    "title": "Jogos",
+    "live": "Ao Vivo",
+    "upcoming": "Próximos",
+    "finished": "Resultados",
+    "all": "Todos",
+    "kickoff": "Início",
+    "halftime": "INT",
+    "fulltime": "FIM",
+    "matchday": "Rodada {{n}}",
+    "noMatches": "Nenhum jogo encontrado",
+    "detail": "Detalhes do Jogo",
+    "events": "Eventos do Jogo",
+    "venue": "Estádio"
+  },
+  "teams": {
+    "title": "Times",
+    "searchPlaceholder": "Buscar times…",
+    "noTeams": "Nenhum time encontrado",
+    "squad": "Elenco",
+    "statistics": "Estatísticas",
+    "standings": "Classificação",
+    "founded": "Fundado",
+    "stadium": "Estádio",
+    "country": "País"
+  },
+  "players": {
+    "title": "Jogadores",
+    "searchPlaceholder": "Buscar jogadores…",
+    "noPlayers": "Nenhum jogador encontrado",
+    "position": "Posição",
+    "allPositions": "Todas as posições",
+    "nationality": "Nacionalidade",
+    "dateOfBirth": "Data de nascimento",
+    "stats": "Estatísticas",
+    "appearances": "Jogos",
+    "goals": "Gols",
+    "assists": "Ass.",
+    "minutes": "Minutos",
+    "rating": "Nota"
+  },
+  "competitions": {
+    "title": "Competições",
+    "noCompetitions": "Nenhuma competição encontrada",
+    "standings": "Classificação",
+    "realStandings": "Tabela real",
+    "simulatedStandings": "Tabela simulada",
+    "pos": "Pos",
+    "team": "Time",
+    "played": "J",
+    "won": "V",
+    "drawn": "E",
+    "lost": "D",
+    "goalsFor": "GP",
+    "goalsAgainst": "GC",
+    "gd": "SG",
+    "points": "Pts"
+  },
+  "news": {
+    "title": "Notícias",
+    "readMore": "Ler mais",
+    "noNews": "Nenhuma notícia disponível",
+    "filterByTeam": "Filtrar por time",
+    "allTeams": "Todos os times",
+    "realtimeActive": "Atualizações em tempo real ativas"
+  },
+  "simulator": {
+    "title": "Simulador de Jogos",
+    "description": "Escolha um jogo, defina o placar e veja como a tabela mudaria.",
+    "selectMatch": "Selecionar jogo",
+    "homeScore": "Gols do time da casa",
+    "awayScore": "Gols do visitante",
+    "simulate": "Simular",
+    "projectedStandings": "Classificação projetada",
+    "history": "Histórico de simulações",
+    "noSimulations": "Nenhuma simulação ainda",
+    "signInRequired": "Entre para rodar simulações",
+    "loading": "Calculando tabela…"
+  },
+  "notifications": {
+    "title": "Notificações",
+    "empty": "Nenhuma notificação ainda",
+    "markAllRead": "Marcar tudo como lido",
+    "unread": "{{count}} não lidas"
+  },
+  "errors": {
+    "notFound": "Não encontrado",
+    "unauthorized": "Entre para acessar esta página",
+    "generic": "Algo deu errado. Tente novamente."
+  },
+  "positions": {
+    "GK": "Goleiro",
+    "DEF": "Defensor",
+    "MID": "Meio-campo",
+    "FWD": "Atacante"
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "nav": {
+    "home": "Home",
+    "matches": "Matches",
+    "competitions": "Competitions",
+    "teams": "Teams",
+    "players": "Players",
+    "news": "News",
+    "simulator": "Simulator",
+    "lineups": "My Lineups",
+    "notifications": "Notifications",
+    "profile": "Settings"
+  },
+  "home": {
+    "title": "Smart Football Hub",
+    "subtitle": "Live scores, stats, news and simulations — all in one place.",
+    "liveMatches": "Live Now",
+    "upcomingMatches": "Upcoming Matches",
+    "latestNews": "Latest News",
+    "seeAll": "See all"
+  },
+  "search": {
+    "placeholder": "Search teams, players…"
+  },
+  "common": {
+    "noData": "No data available",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "seeAll": "See all",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "unknown": "Unknown",
+    "vs": "vs",
+    "goal_difference": "GD"
+  },
+  "settings": {
+    "theme": "Toggle theme",
+    "language": "Switch language",
+    "title": "Settings",
+    "appearance": "Appearance",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode",
+    "systemMode": "System",
+    "lang_en": "English",
+    "lang_pt": "Português",
+    "notifications": "Notifications",
+    "notifyMatches": "Notify me about live matches",
+    "notifyTeamNews": "Notify me about team news",
+    "favoriteTeams": "Favourite Teams",
+    "account": "Account",
+    "signIn": "Sign in to save preferences",
+    "signOut": "Sign out"
+  },
+  "matches": {
+    "title": "Matches",
+    "live": "Live",
+    "upcoming": "Upcoming",
+    "finished": "Results",
+    "all": "All",
+    "kickoff": "Kick-off",
+    "halftime": "HT",
+    "fulltime": "FT",
+    "matchday": "Matchday {{n}}",
+    "noMatches": "No matches found",
+    "detail": "Match Details",
+    "events": "Match Events",
+    "venue": "Venue"
+  },
+  "teams": {
+    "title": "Teams",
+    "searchPlaceholder": "Search teams…",
+    "noTeams": "No teams found",
+    "squad": "Squad",
+    "statistics": "Statistics",
+    "standings": "Standings",
+    "founded": "Founded",
+    "stadium": "Stadium",
+    "country": "Country"
+  },
+  "players": {
+    "title": "Players",
+    "searchPlaceholder": "Search players…",
+    "noPlayers": "No players found",
+    "position": "Position",
+    "allPositions": "All positions",
+    "nationality": "Nationality",
+    "dateOfBirth": "Date of birth",
+    "stats": "Statistics",
+    "appearances": "Apps",
+    "goals": "Goals",
+    "assists": "Assists",
+    "minutes": "Minutes",
+    "rating": "Rating"
+  },
+  "competitions": {
+    "title": "Competitions",
+    "noCompetitions": "No competitions found",
+    "standings": "Standings",
+    "realStandings": "Real standings",
+    "simulatedStandings": "Simulated standings",
+    "pos": "Pos",
+    "team": "Team",
+    "played": "P",
+    "won": "W",
+    "drawn": "D",
+    "lost": "L",
+    "goalsFor": "GF",
+    "goalsAgainst": "GA",
+    "gd": "GD",
+    "points": "Pts"
+  },
+  "news": {
+    "title": "News",
+    "readMore": "Read more",
+    "noNews": "No news available",
+    "filterByTeam": "Filter by team",
+    "allTeams": "All teams",
+    "realtimeActive": "Live updates active"
+  },
+  "simulator": {
+    "title": "Match Simulator",
+    "description": "Pick a scheduled match, set your predicted scores and see how the league table would change.",
+    "selectMatch": "Select a match",
+    "homeScore": "Home score",
+    "awayScore": "Away score",
+    "simulate": "Simulate",
+    "projectedStandings": "Projected standings",
+    "history": "Simulation history",
+    "noSimulations": "No simulations yet",
+    "signInRequired": "Sign in to run simulations",
+    "loading": "Calculating standings…"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all as read",
+    "unread": "{{count}} unread"
+  },
+  "errors": {
+    "notFound": "Not found",
+    "unauthorized": "Please sign in to access this page",
+    "generic": "Something went wrong. Please try again."
+  },
+  "positions": {
+    "GK": "Goalkeeper",
+    "DEF": "Defender",
+    "MID": "Midfielder",
+    "FWD": "Forward"
+  }
+}
