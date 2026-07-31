@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from "react";
 
+interface TeamInfo {
+  id: string;
+  name: string;
+  shortName?: string;
+  crestUrl?: string;
+}
+
 interface Match {
   id: string | number;
-  homeTeam: string;
-  awayTeam: string;
-  homeBadge?: string;
-  awayBadge?: string;
+  homeTeam: TeamInfo;
+  awayTeam: TeamInfo;
   homeScore?: number | null;
   awayScore?: number | null;
-  date: string;
+  kickoffAt: string;
   status: string;
-  minute?: number | string;
+  venue?: string;
+  matchday?: number;
 }
 
 interface UpcomingMatchesProps {
@@ -29,8 +35,7 @@ export function UpcomingMatches({ teamId }: UpcomingMatchesProps) {
       setIsLoading(true);
       setError(null);
       try {
-        const baseUrl =
-          import.meta.env.VITE_API_BASE_URL || "";
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
         const res = await fetch(`${baseUrl}/api/teams/${teamId}/matches`);
         const json = await res.json();
 
@@ -85,10 +90,10 @@ export function UpcomingMatches({ teamId }: UpcomingMatchesProps) {
       ) : (
         <div className="space-y-3">
           {matches.map((match) => {
-            const isLive =
-              match.status === "LIVE" || match.status === "IN_PLAY";
+            const statusLower = match.status?.toLowerCase() || "";
+            const isLive = statusLower === "live" || statusLower === "in_play";
             const isFinished =
-              match.status === "FINISHED" || match.status === "FT";
+              statusLower === "finished" || statusLower === "ft";
 
             return (
               <div
@@ -102,11 +107,11 @@ export function UpcomingMatches({ teamId }: UpcomingMatchesProps) {
                 {/* Home Team */}
                 <div className="flex items-center gap-3 w-[38%] justify-end">
                   <span className="text-xs font-bold uppercase truncate text-right text-[#e2e2e8]">
-                    {match.homeTeam}
+                    {match.homeTeam?.name}
                   </span>
-                  {match.homeBadge && (
+                  {match.homeTeam?.crestUrl && (
                     <img
-                      src={match.homeBadge}
+                      src={match.homeTeam.crestUrl}
                       alt=""
                       className="w-6 h-6 object-contain shrink-0"
                     />
@@ -123,7 +128,7 @@ export function UpcomingMatches({ teamId }: UpcomingMatchesProps) {
                         <span>{match.awayScore ?? 0}</span>
                       </div>
                       <span className="text-[9px] font-black text-emerald-400 uppercase tracking-tighter animate-pulse">
-                        {match.minute ? `${match.minute}'` : "AO VIVO"}
+                        AO VIVO
                       </span>
                     </>
                   ) : isFinished ? (
@@ -139,25 +144,27 @@ export function UpcomingMatches({ teamId }: UpcomingMatchesProps) {
                     </>
                   ) : (
                     <span className="text-[10px] font-mono text-[#00d2fd]">
-                      {new Date(match.date).toLocaleDateString([], {
-                        day: "2-digit",
-                        month: "2-digit",
-                      })}
+                      {match.kickoffAt
+                        ? new Date(match.kickoffAt).toLocaleDateString([], {
+                            day: "2-digit",
+                            month: "2-digit",
+                          })
+                        : "TBD"}
                     </span>
                   )}
                 </div>
 
                 {/* Away Team */}
                 <div className="flex items-center gap-3 w-[38%]">
-                  {match.awayBadge && (
+                  {match.awayTeam?.crestUrl && (
                     <img
-                      src={match.awayBadge}
+                      src={match.awayTeam.crestUrl}
                       alt=""
                       className="w-6 h-6 object-contain shrink-0"
                     />
                   )}
                   <span className="text-xs font-bold uppercase truncate text-[#e2e2e8]">
-                    {match.awayTeam}
+                    {match.awayTeam?.name}
                   </span>
                 </div>
               </div>

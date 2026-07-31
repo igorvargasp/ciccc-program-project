@@ -49,8 +49,7 @@ export function SelectFavoriteTeamModal({
       setErrorMessage(null);
 
       try {
-        const baseUrl =
-          import.meta.env.VITE_API_BASE_URL || "";
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
 
         const res = await fetch(
           `${baseUrl}/api/teams?search=${encodeURIComponent(cleanSearch)}`,
@@ -68,7 +67,7 @@ export function SelectFavoriteTeamModal({
           const formattedTeams: Team[] = json.data.map((item: any) => ({
             id: item.id,
             name: item.name,
-            badgeUrl: item.badgeUrl || item.logo,
+            badgeUrl: item.crestUrl || item.badgeUrl || item.logo,
             country: item.country,
           }));
           setSearchResults(formattedTeams);

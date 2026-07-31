@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import FootballPitch from "../Lineup/FootballPitch";
+import { StandingsTable } from "../Standings/StandingsTable";
 
 export interface Team {
   id: string | number;
@@ -33,8 +34,7 @@ function UpcomingMatches({ teamId }: { teamId?: string | number }) {
       setIsLoading(true);
       setError(null);
       try {
-        const baseUrl =
-          import.meta.env.VITE_API_BASE_URL || "";
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
         const res = await fetch(`${baseUrl}/api/teams/${teamId}/matches`);
         const json = await res.json();
 
@@ -42,7 +42,6 @@ function UpcomingMatches({ teamId }: { teamId?: string | number }) {
           throw new Error(json.error || "Erro ao buscar próximas partidas.");
         }
 
-        // Garante que pegamos um array a partir de diferentes formatos de resposta de API
         const matchesData = json.data || json.matches || json || [];
         setMatches(Array.isArray(matchesData) ? matchesData : []);
       } catch (err: any) {
@@ -69,7 +68,7 @@ function UpcomingMatches({ teamId }: { teamId?: string | number }) {
       <div className="flex items-center justify-between border-b border-[#414755]/30 pb-3">
         <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em] flex items-center gap-2">
           <span className="material-symbols-outlined text-sm">event</span>
-          Próximas Partidas
+          Next Matches
         </h3>
         <span className="text-[10px] text-[#8b90a0] uppercase">
           Telemetry Schedule
@@ -90,168 +89,72 @@ function UpcomingMatches({ teamId }: { teamId?: string | number }) {
         </div>
       ) : (
         <div className="space-y-3">
-          {matches.map((match, idx) => (
-            <div
-              key={match.id || idx}
-              className="bg-[#0d0f12] border border-[#414755]/20 p-3 flex items-center justify-between hover:border-[#00d2fd]/50 transition-all"
-            >
-              <div className="flex items-center gap-3 w-2/5 justify-end">
-                <span className="text-xs font-bold uppercase truncate text-right">
-                  {match.homeTeam || match.home_team || "Mandante"}
-                </span>
-                {(match.homeBadge || match.home_badge) && (
-                  <img
-                    src={match.homeBadge || match.home_badge}
-                    alt=""
-                    className="w-6 h-6 object-contain"
-                  />
-                )}
+          {matches.map((match, idx) => {
+            const homeName =
+              typeof match.homeTeam === "object"
+                ? match.homeTeam?.name
+                : match.homeTeam || match.home_team;
+            const homeBadge =
+              typeof match.homeTeam === "object"
+                ? match.homeTeam?.crestUrl
+                : match.homeBadge || match.home_badge;
+
+            const awayName =
+              typeof match.awayTeam === "object"
+                ? match.awayTeam?.name
+                : match.awayTeam || match.away_team;
+            const awayBadge =
+              typeof match.awayTeam === "object"
+                ? match.awayTeam?.crestUrl
+                : match.awayBadge || match.away_badge;
+
+            const matchDate = match.kickoffAt || match.date;
+
+            return (
+              <div
+                key={match.id || idx}
+                className="bg-[#0d0f12] border border-[#414755]/20 p-3 flex items-center justify-between hover:border-[#00d2fd]/50 transition-all"
+              >
+                {/* Mandante */}
+                <div className="flex items-center gap-3 w-2/5 justify-end">
+                  <span className="text-xs font-bold uppercase truncate text-right text-[#e2e2e8]">
+                    {homeName || "Mandante"}
+                  </span>
+                  {homeBadge && (
+                    <img
+                      src={homeBadge}
+                      alt=""
+                      className="w-6 h-6 object-contain shrink-0"
+                    />
+                  )}
+                </div>
+
+                {/* Data / Hora */}
+                <div className="px-2 py-1 bg-[#14171c] border border-[#414755]/30 text-[10px] font-mono text-[#00d2fd] text-center shrink-0">
+                  {matchDate
+                    ? new Date(matchDate).toLocaleDateString([], {
+                        day: "2-digit",
+                        month: "2-digit",
+                      })
+                    : match.time || "Em breve"}
+                </div>
+
+                {/* Visitante */}
+                <div className="flex items-center gap-3 w-2/5">
+                  {awayBadge && (
+                    <img
+                      src={awayBadge}
+                      alt=""
+                      className="w-6 h-6 object-contain shrink-0"
+                    />
+                  )}
+                  <span className="text-xs font-bold uppercase truncate text-[#e2e2e8]">
+                    {awayName || "Visitante"}
+                  </span>
+                </div>
               </div>
-              <div className="px-2 py-1 bg-[#14171c] border border-[#414755]/30 text-[10px] font-mono text-[#00d2fd]">
-                {match.date
-                  ? new Date(match.date).toLocaleDateString()
-                  : match.time || "Em breve"}
-              </div>
-              <div className="flex items-center gap-3 w-2/5">
-                {(match.awayBadge || match.away_badge) && (
-                  <img
-                    src={match.awayBadge || match.away_badge}
-                    alt=""
-                    className="w-6 h-6 object-contain"
-                  />
-                )}
-                <span className="text-xs font-bold uppercase truncate">
-                  {match.awayTeam || match.away_team || "Visitante"}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ==========================================
-// COMPONENTE: TABELA DE CLASSIFICAÇÃO
-// ==========================================
-function StandingsTable({ teamId }: { teamId?: string | number }) {
-  const [standings, setStandings] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!teamId) return;
-
-    const fetchStandings = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const baseUrl =
-          import.meta.env.VITE_API_BASE_URL || "";
-        const res = await fetch(`${baseUrl}/api/teams/${teamId}/standings`);
-        const json = await res.json();
-
-        if (!res.ok) {
-          throw new Error(
-            json.error || "Erro ao buscar tabela de classificação.",
-          );
-        }
-
-        // API returns [{ competition, seasonId, label, isCurrent, table: [...] }].
-        // Pull the current (or first) competition group's table rows.
-        const groups = Array.isArray(json.data) ? json.data : [];
-        const group = groups.find((g: any) => g.isCurrent) ?? groups[0];
-        setStandings(Array.isArray(group?.table) ? group.table : []);
-      } catch (err: any) {
-        console.error("Erro ao carregar standings:", err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStandings();
-  }, [teamId]);
-
-  if (!teamId) return null;
-
-  return (
-    <div className="bg-[#14171c] border border-[#414755]/30 p-6 space-y-4">
-      <div className="flex items-center justify-between border-b border-[#414755]/30 pb-3">
-        <h3 className="text-xs font-black text-[#4b8eff] uppercase tracking-[0.2em] flex items-center gap-2">
-          <span className="material-symbols-outlined text-sm">leaderboard</span>
-          Tabela de Classificação
-        </h3>
-        <span className="text-[10px] text-[#8b90a0] uppercase">
-          League Standings
-        </span>
-      </div>
-
-      {isLoading ? (
-        <div className="py-6 text-center text-xs text-[#4b8eff] animate-pulse">
-          Calculando matriz da liga...
-        </div>
-      ) : error ? (
-        <div className="text-xs text-red-400 p-3 bg-red-500/10 border border-red-500/20">
-          {error}
-        </div>
-      ) : standings.length === 0 ? (
-        <div className="text-xs text-[#8b90a0] text-center py-4 uppercase">
-          Nenhum dado de classificação disponível para este clube.
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-[#414755]/30 text-[#8b90a0] uppercase text-[10px]">
-                <th className="py-2 px-2">#</th>
-                <th className="py-2 px-2">Clube</th>
-                <th className="py-2 px-2 text-center">J</th>
-                <th className="py-2 px-2 text-center">SG</th>
-                <th className="py-2 px-2 text-right">Pts</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#414755]/10 font-mono">
-              {standings.map((row, idx) => {
-                const goalDiff = (row.goalsFor ?? 0) - (row.goalsAgainst ?? 0);
-                const isCurrentTeam = String(row.team?.id) === String(teamId);
-                return (
-                  <tr
-                    key={row.team?.id ?? row.position ?? idx}
-                    className={`hover:bg-[#0d0f12]/60 transition-colors ${
-                      isCurrentTeam ? "bg-[#4b8eff]/10" : ""
-                    }`}
-                  >
-                    <td className="py-2.5 px-2 font-bold text-[#00d2fd]">
-                      {row.position ?? idx + 1}
-                    </td>
-                    <td className="py-2.5 px-2 flex items-center gap-2 font-sans uppercase font-bold">
-                      {row.team?.crestUrl && (
-                        <img
-                          src={row.team.crestUrl}
-                          alt=""
-                          className="w-4 h-4 object-contain"
-                        />
-                      )}
-                      <span className="truncate max-w-[120px] sm:max-w-xs">
-                        {row.team?.name}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-2 text-center text-[#8b90a0]">
-                      {row.played ?? 0}
-                    </td>
-                    <td className="py-2.5 px-2 text-center text-[#8b90a0]">
-                      {goalDiff > 0 ? `+${goalDiff}` : goalDiff}
-                    </td>
-                    <td className="py-2.5 px-2 text-right font-bold text-[#e2e2e8]">
-                      {row.points ?? 0}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+            );
+          })}
         </div>
       )}
     </div>
@@ -278,8 +181,7 @@ function LiveSimulator({
     setIsSimulating(true);
     setError(null);
     try {
-      const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || "";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
       const res = await fetch(`${baseUrl}/api/simulations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -433,47 +335,34 @@ export function Dashboard({ onOpenTeamModal }: DashboardProps) {
     };
   }, []);
 
-  const fetchTeamDataFromBackend = async (team: Team) => {
+  const fetchTeamDataFromBackend = async (team: any) => {
     if (!team?.id) return;
 
     setIsLoadingStats(true);
-    setApiError(null);
-
     try {
-      const baseUrl =
-        import.meta.env.VITE_API_BASE_URL || "";
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
       const res = await fetch(`${baseUrl}/api/teams/${team.id}`);
       const json = await res.json();
 
-      if (!res.ok) {
-        throw new Error(
-          json.error || "Erro ao carregar dados do time no servidor.",
-        );
-      }
+      if (!res.ok) throw new Error("Erro ao buscar dados do time");
 
-      const teamData = json.data || json;
+      const teamData = json.data;
 
-      const updatedTeam: Team = {
+      const updatedTeam = {
         ...team,
-        name: teamData.name || team.name,
-        badgeUrl:
-          teamData.badgeUrl || teamData.logo || teamData.badge || team.badgeUrl,
-        country: teamData.country || team.country,
-        league: teamData.league || team.league,
+        ...teamData,
+        crestUrl: teamData.crestUrl || team.crestUrl || team.badgeUrl,
         stats: teamData.stats || {
-          winRate: teamData.winRate || teamData.win_rate || "---",
-          goalsScored: teamData.goalsScored ?? teamData.goals_scored ?? 0,
-          cleanSheets: teamData.cleanSheets ?? teamData.clean_sheets ?? 0,
+          winRate: "0%",
+          goalsScored: 0,
+          cleanSheets: 0,
         },
       };
 
       setFavoriteTeam(updatedTeam);
       localStorage.setItem("favorite_team", JSON.stringify(updatedTeam));
-    } catch (err: any) {
-      console.error("Erro ao sincronizar com o backend:", err);
-      setApiError(err.message);
-      // Mantém o time atual mesmo se o backend falhar para não sumir com o estado visual
-      setFavoriteTeam(team);
+    } catch (err) {
+      console.error("Erro ao sincronizar time:", err);
     } finally {
       setIsLoadingStats(false);
     }
@@ -521,16 +410,7 @@ export function Dashboard({ onOpenTeamModal }: DashboardProps) {
               >
                 Tactical Feed
               </button>
-              <button
-                onClick={() => setActiveTab("standings")}
-                className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                  activeTab === "standings"
-                    ? "bg-[#4b8eff] text-[#001a41]"
-                    : "text-[#8b90a0] hover:text-[#e2e2e8]"
-                }`}
-              >
-                Standings
-              </button>
+
               <button
                 onClick={() => setActiveTab("selector")}
                 className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
@@ -728,9 +608,12 @@ export function Dashboard({ onOpenTeamModal }: DashboardProps) {
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 bg-[#0d0f12] border border-[#00d2fd]/30 p-2 flex items-center justify-center">
-                          {favoriteTeam.badgeUrl ? (
+                          {/* Verifica crestUrl (do banco) ou badgeUrl */}
+                          {favoriteTeam.crestUrl || favoriteTeam.badgeUrl ? (
                             <img
-                              src={favoriteTeam.badgeUrl}
+                              src={
+                                favoriteTeam.crestUrl || favoriteTeam.badgeUrl
+                              }
                               alt={favoriteTeam.name}
                               className="w-full h-full object-contain"
                             />
