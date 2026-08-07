@@ -5,6 +5,7 @@ export interface ListPlayersParams {
   search?: string;
   position?: 'GK' | 'DEF' | 'MID' | 'FWD';
   teamId?: string;
+  competitionId?: string;
   limit?: number;
 }
 

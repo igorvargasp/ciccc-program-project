@@ -6,7 +6,7 @@ import type { Team } from '../types';
 export function useTeamsMap(): Map<string, Team> {
   const { data } = useQuery({
     queryKey: ['teams', { limit: 200 }],
-    queryFn: () => listTeams({ limit: 200 }),
+    queryFn: () => listTeams({ limit: 500 }),
     staleTime: 5 * 60_000,
   });
 

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, User } from 'lucide-react';
 import { listPlayers } from '../api/players';
 import PlayerCard from '../components/PlayerCard';
+import CompetitionPills from '../components/CompetitionPills';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import type { Position } from '../types';
@@ -15,14 +16,16 @@ export default function Players() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [position, setPosition] = useState<Position | 'all'>('all');
+  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
   const [inputVal, setInputVal] = useState('');
 
   const { data: players, isLoading } = useQuery({
-    queryKey: ['players', { search, position }],
+    queryKey: ['players', { search, position, competitionId }],
     queryFn: () =>
       listPlayers({
         search: search || undefined,
         position: position === 'all' ? undefined : position,
+        competitionId,
         limit: 100,
       }),
   });
@@ -63,6 +66,9 @@ export default function Players() {
           ))}
         </div>
       </div>
+
+      {/* League filter */}
+      <CompetitionPills value={competitionId} onChange={setCompetitionId} />
 
       {/* Grid */}
       {isLoading ? (

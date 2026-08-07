@@ -33,7 +33,10 @@
     "close": "Close",
     "unknown": "Unknown",
     "vs": "vs",
-    "goal_difference": "GD"
+    "goal_difference": "GD",
+    "all": "All",
+    "showMore": "Show {{n}} more",
+    "showLess": "Show less"
   },
   "settings": {
     "theme": "Toggle theme",
@@ -45,6 +48,7 @@
     "systemMode": "System",
     "lang_en": "English",
     "lang_pt": "Português",
+    "lang_es": "Español",
     "notifications": "Notifications",
     "notifyMatches": "Notify me about live matches",
     "notifyTeamNews": "Notify me about team news",

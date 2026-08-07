@@ -33,7 +33,10 @@
     "close": "Fechar",
     "unknown": "Desconhecido",
     "vs": "x",
-    "goal_difference": "SG"
+    "goal_difference": "SG",
+    "all": "Todos",
+    "showMore": "Ver mais {{n}}",
+    "showLess": "Ver menos"
   },
   "settings": {
     "theme": "Alternar tema",
@@ -45,6 +48,7 @@
     "systemMode": "Sistema",
     "lang_en": "English",
     "lang_pt": "Português",
+    "lang_es": "Español",
     "notifications": "Notificações",
     "notifyMatches": "Notificar sobre jogos ao vivo",
     "notifyTeamNews": "Notificar sobre notícias do time",

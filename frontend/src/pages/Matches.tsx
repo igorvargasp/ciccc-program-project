@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { listMatches } from '../api/matches';
 import MatchCard from '../components/MatchCard';
+import CompetitionPills from '../components/CompetitionPills';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { Calendar } from 'lucide-react';
@@ -20,11 +21,12 @@ const TABS: { key: StatusFilter | 'all'; label: string }[] = [
 export default function Matches() {
   const { t } = useTranslation();
   const [status, setStatus] = useState<StatusFilter>('scheduled');
+  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
   const teamsMap = useTeamsMap();
 
   const { data: matches, isLoading } = useQuery({
-    queryKey: ['matches', { status }],
-    queryFn: () => listMatches({ status, limit: 50 }),
+    queryKey: ['matches', { status, competitionId }],
+    queryFn: () => listMatches({ status, competitionId, limit: 50 }),
     refetchInterval: status === 'live' ? 30_000 : undefined,
   });
 
@@ -50,6 +52,9 @@ export default function Matches() {
           </button>
         ))}
       </div>
+
+      {/* League filter */}
+      <CompetitionPills value={competitionId} onChange={setCompetitionId} />
 
       {/* Matches grid */}
       {isLoading ? (

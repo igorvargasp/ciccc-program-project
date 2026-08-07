@@ -17,7 +17,8 @@ export default function Header() {
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
   const toggleLang = () => {
-    const next = lang === 'en' ? 'pt' : 'en';
+    const cycle: Record<string, string> = { en: 'pt', pt: 'es', es: 'en' };
+    const next = cycle[lang] ?? 'en';
     setLang(next);
     i18n.changeLanguage(next);
     localStorage.setItem('sfh-lang', next);
