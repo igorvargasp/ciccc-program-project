@@ -4,6 +4,7 @@ import type { Match, MatchEvent } from '../types';
 export interface ListMatchesParams {
   teamId?: string;
   seasonId?: string;
+  competitionId?: string;
   status?: 'scheduled' | 'live' | 'finished';
   from?: string;
   to?: string;

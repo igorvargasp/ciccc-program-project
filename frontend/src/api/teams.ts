@@ -4,6 +4,7 @@ import type { Team, Player, TeamStandingsItem } from '../types';
 export interface ListTeamsParams {
   search?: string;
   country?: string;
+  competitionId?: string;
   limit?: number;
 }
 

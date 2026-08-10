@@ -12,6 +12,7 @@ const THEMES: Theme[] = ['dark', 'light', 'system'];
 const LANGS = [
   { code: 'en', label: 'English' },
   { code: 'pt', label: 'Português' },
+  { code: 'es', label: 'Español' },
 ];
 
 export default function Profile() {

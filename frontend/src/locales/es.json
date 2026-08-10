@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "matches": "Partidos",
+    "competitions": "Competiciones",
+    "teams": "Equipos",
+    "players": "Jugadores",
+    "news": "Noticias",
+    "simulator": "Simulador",
+    "lineups": "Mis Alineaciones",
+    "notifications": "Notificaciones",
+    "profile": "Ajustes"
+  },
+  "home": {
+    "title": "Smart Football Hub",
+    "subtitle": "Marcadores en vivo, estadísticas, noticias y simulaciones — todo en un lugar.",
+    "liveMatches": "En Vivo",
+    "upcomingMatches": "Próximos Partidos",
+    "latestNews": "Últimas Noticias",
+    "seeAll": "Ver todo"
+  },
+  "search": {
+    "placeholder": "Buscar equipos, jugadores…"
+  },
+  "common": {
+    "noData": "Sin datos disponibles",
+    "loading": "Cargando…",
+    "error": "Algo salió mal",
+    "seeAll": "Ver todo",
+    "back": "Volver",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "unknown": "Desconocido",
+    "vs": "vs",
+    "goal_difference": "DG",
+    "all": "Todos",
+    "showMore": "Ver {{n}} más",
+    "showLess": "Ver menos"
+  },
+  "settings": {
+    "theme": "Cambiar tema",
+    "language": "Cambiar idioma",
+    "title": "Ajustes",
+    "appearance": "Apariencia",
+    "darkMode": "Modo oscuro",
+    "lightMode": "Modo claro",
+    "systemMode": "Sistema",
+    "lang_en": "English",
+    "lang_pt": "Português",
+    "lang_es": "Español",
+    "notifications": "Notificaciones",
+    "notifyMatches": "Notificarme sobre partidos en vivo",
+    "notifyTeamNews": "Notificarme sobre noticias del equipo",
+    "favoriteTeams": "Equipos Favoritos",
+    "account": "Cuenta",
+    "signIn": "Inicia sesión para guardar preferencias",
+    "signOut": "Cerrar sesión"
+  },
+  "matches": {
+    "title": "Partidos",
+    "live": "En Vivo",
+    "upcoming": "Próximos",
+    "finished": "Resultados",
+    "all": "Todos",
+    "kickoff": "Inicio",
+    "halftime": "MT",
+    "fulltime": "FT",
+    "matchday": "Jornada {{n}}",
+    "noMatches": "No se encontraron partidos",
+    "detail": "Detalles del partido",
+    "events": "Eventos del partido",
+    "venue": "Estadio"
+  },
+  "teams": {
+    "title": "Equipos",
+    "searchPlaceholder": "Buscar equipos…",
+    "noTeams": "No se encontraron equipos",
+    "squad": "Plantilla",
+    "statistics": "Estadísticas",
+    "standings": "Clasificación",
+    "founded": "Fundado",
+    "stadium": "Estadio",
+    "country": "País"
+  },
+  "players": {
+    "title": "Jugadores",
+    "searchPlaceholder": "Buscar jugadores…",
+    "noPlayers": "No se encontraron jugadores",
+    "position": "Posición",
+    "allPositions": "Todas las posiciones",
+    "nationality": "Nacionalidad",
+    "dateOfBirth": "Fecha de nacimiento",
+    "stats": "Estadísticas",
+    "appearances": "Partidos",
+    "goals": "Goles",
+    "assists": "Asist.",
+    "minutes": "Minutos",
+    "rating": "Valoración"
+  },
+  "competitions": {
+    "title": "Competiciones",
+    "noCompetitions": "No se encontraron competiciones",
+    "standings": "Clasificación",
+    "realStandings": "Clasificación real",
+    "simulatedStandings": "Clasificación simulada",
+    "pos": "Pos",
+    "team": "Equipo",
+    "played": "PJ",
+    "won": "PG",
+    "drawn": "PE",
+    "lost": "PP",
+    "goalsFor": "GF",
+    "goalsAgainst": "GC",
+    "gd": "DG",
+    "points": "Pts"
+  },
+  "news": {
+    "title": "Noticias",
+    "readMore": "Leer más",
+    "noNews": "No hay noticias disponibles",
+    "filterByTeam": "Filtrar por equipo",
+    "allTeams": "Todos los equipos",
+    "realtimeActive": "Actualizaciones en vivo activas"
+  },
+  "simulator": {
+    "title": "Simulador de Partidos",
+    "description": "Elige un partido programado, establece los marcadores y observa cómo cambiaría la clasificación.",
+    "selectMatch": "Seleccionar partido",
+    "homeScore": "Goles local",
+    "awayScore": "Goles visitante",
+    "simulate": "Simular",
+    "projectedStandings": "Clasificación proyectada",
+    "history": "Historial de simulaciones",
+    "noSimulations": "Sin simulaciones aún",
+    "signInRequired": "Inicia sesión para ejecutar simulaciones",
+    "loading": "Calculando clasificación…"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "Sin notificaciones aún",
+    "markAllRead": "Marcar todo como leído",
+    "unread": "{{count}} sin leer"
+  },
+  "errors": {
+    "notFound": "No encontrado",
+    "unauthorized": "Inicia sesión para acceder a esta página",
+    "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
+  },
+  "positions": {
+    "GK": "Portero",
+    "DEF": "Defensa",
+    "MID": "Centrocampista",
+    "FWD": "Delantero"
+  }
+}

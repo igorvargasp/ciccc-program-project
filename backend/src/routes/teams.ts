@@ -1,6 +1,10 @@
 import { Router } from "express";
+<<<<<<< HEAD
 import { and, or, eq, asc, ilike } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
+=======
+import { and, asc, eq, ilike, inArray } from "drizzle-orm";
+>>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
 import { z } from "zod";
 import { db } from "../db/index.js";
 import {
@@ -19,18 +23,26 @@ export const teamsRouter = Router();
 const listQuery = z.object({
   search: z.string().trim().min(1).optional(),
   country: z.string().trim().min(1).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  competitionId: z.string().uuid().optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(50),
 });
 
 // GET /api/teams — list/search teams
 teamsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const { search, country, limit } = listQuery.parse(req.query);
+    const { search, country, competitionId, limit } = listQuery.parse(req.query);
 
     const filters = [];
     if (search) filters.push(ilike(teams.name, `%${search}%`));
     if (country) filters.push(eq(teams.country, country));
+    if (competitionId) {
+      const seasonIds = (await db.select({ id: seasons.id }).from(seasons).where(eq(seasons.competitionId, competitionId))).map((s) => s.id);
+      if (!seasonIds.length) { res.json({ data: [] }); return; }
+      const teamIds = (await db.selectDistinct({ id: standings.teamId }).from(standings).where(inArray(standings.seasonId, seasonIds))).map((s) => s.id);
+      if (!teamIds.length) { res.json({ data: [] }); return; }
+      filters.push(inArray(teams.id, teamIds));
+    }
 
     const rows = await db
       .select({

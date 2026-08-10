@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -93,10 +94,29 @@ function HeroSection({ onOpenTeamModal, selectedTeam }: HeroSectionProps) {
     </section>
   );
 }
+=======
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { ArrowRight, Radio } from 'lucide-react';
+import { listMatches } from '../api/matches';
+import { listNews } from '../api/news';
+import { listCompetitions } from '../api/competitions';
+import MatchCard from '../components/MatchCard';
+import NewsCard from '../components/NewsCard';
+import { useTeamsMap } from '../hooks/useTeamsMap';
+import { useNewsRealtime } from '../hooks/useRealtime';
+import { SkeletonCard } from '../components/ui/Skeleton';
+import { cn } from '../lib/utils';
+
+const UPCOMING_PAGE_SIZE = 6;
+>>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
 
 export default function Home() {
   const { t } = useTranslation();
   const teamsMap = useTeamsMap();
+<<<<<<< HEAD
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 
@@ -123,9 +143,19 @@ export default function Home() {
       window.removeEventListener("favoriteTeamChanged", loadFavoriteTeam);
     };
   }, []);
+=======
+  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
+  const [showAll, setShowAll] = useState(false);
+>>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
 
   // Subscribe to live news via Socket.IO
   useNewsRealtime();
+
+  const { data: competitions } = useQuery({
+    queryKey: ['competitions'],
+    queryFn: listCompetitions,
+    staleTime: 10 * 60_000,
+  });
 
   const { data: liveMatches, isLoading: loadingLive } = useQuery({
     queryKey: ["matches", { status: "live" }],
@@ -137,6 +167,7 @@ export default function Home() {
 
   // Busca as partidas agendadas estritamente do time favorito
   const { data: upcomingMatches, isLoading: loadingUpcoming } = useQuery({
+<<<<<<< HEAD
     queryKey: ["team-matches", teamId, "scheduled"],
     queryFn: async () => {
       if (!teamId) return [];
@@ -151,6 +182,10 @@ export default function Home() {
       return (json.data || json || []) as any[];
     },
     enabled: !!teamId,
+=======
+    queryKey: ['matches', { status: 'scheduled', competitionId }],
+    queryFn: () => listMatches({ status: 'scheduled', competitionId, limit: 50 }),
+>>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
     staleTime: 60_000,
   });
 
@@ -226,7 +261,40 @@ export default function Home() {
             {t("common.seeAll", "See all")} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
+
+        {/* League filter */}
+        {competitions && competitions.length > 0 && (
+          <div className="flex gap-2 flex-wrap mb-4">
+            <button
+              onClick={() => { setCompetitionId(undefined); setShowAll(false); }}
+              className={cn(
+                'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+                !competitionId
+                  ? 'bg-brand text-white border-brand'
+                  : 'bg-surface-2 text-muted border-edge/12 hover:text-foreground',
+              )}
+            >
+              {t('common.all')}
+            </button>
+            {competitions.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => { setCompetitionId(c.id === competitionId ? undefined : c.id); setShowAll(false); }}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+                  competitionId === c.id
+                    ? 'bg-brand text-white border-brand'
+                    : 'bg-surface-2 text-muted border-edge/12 hover:text-foreground',
+                )}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+<<<<<<< HEAD
           {loadingUpcoming ? (
             Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
           ) : !teamId ? (
@@ -265,7 +333,33 @@ export default function Home() {
               {t("common.noData")}
             </p>
           )}
+=======
+          {loadingUpcoming
+            ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+            : upcomingMatches?.length
+              ? (showAll ? upcomingMatches : upcomingMatches.slice(0, UPCOMING_PAGE_SIZE)).map((m) => (
+                  <MatchCard
+                    key={m.id}
+                    match={m}
+                    homeTeam={teamsMap.get(m.homeTeamId)}
+                    awayTeam={teamsMap.get(m.awayTeamId)}
+                  />
+                ))
+              : <p className="text-muted text-sm col-span-full">{t('common.noData')}</p>}
+>>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
         </div>
+
+        {/* Show more / show less */}
+        {!loadingUpcoming && upcomingMatches && upcomingMatches.length > UPCOMING_PAGE_SIZE && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className="px-5 py-2 rounded-lg bg-surface-2 border border-edge/12 text-sm font-semibold text-muted hover:text-foreground transition-colors"
+            >
+              {showAll ? t('common.showLess') : t('common.showMore', { n: upcomingMatches.length - UPCOMING_PAGE_SIZE })}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ── Latest news ── */}

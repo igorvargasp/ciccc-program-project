@@ -1,8 +1,12 @@
 import { Router } from "express";
-import { and, asc, desc, eq, gte, lte, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
+<<<<<<< HEAD
 import { matches, matchEvents, seasons, competitions } from "../db/schema.js";
+=======
+import { matches, matchEvents, seasons } from "../db/schema.js";
+>>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
 import { asyncHandler } from "../lib/async-handler.js";
 import { notFound } from "../lib/http-error.js";
 
@@ -11,6 +15,7 @@ export const matchesRouter = Router();
 const listQuery = z.object({
   teamId: z.string().uuid().optional(),
   seasonId: z.string().uuid().optional(),
+  competitionId: z.string().uuid().optional(),
   status: z.enum(["scheduled", "live", "finished"]).optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
@@ -29,6 +34,15 @@ matchesRouter.get(
         or(eq(matches.homeTeamId, q.teamId), eq(matches.awayTeamId, q.teamId)),
       );
     if (q.seasonId) filters.push(eq(matches.seasonId, q.seasonId));
+    if (q.competitionId) {
+      const seasonIds = (await db
+        .select({ id: seasons.id })
+        .from(seasons)
+        .where(eq(seasons.competitionId, q.competitionId)))
+        .map((s) => s.id);
+      if (seasonIds.length) filters.push(inArray(matches.seasonId, seasonIds));
+      else { res.json({ data: [] }); return; }
+    }
     if (q.status) filters.push(eq(matches.status, q.status));
     if (q.from) filters.push(gte(matches.kickoffAt, q.from));
     if (q.to) filters.push(lte(matches.kickoffAt, q.to));

@@ -64,10 +64,11 @@ function NavLink({
 
 export default function Sidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 w-52 hidden lg:flex flex-col bg-surface border-r border-edge/12 z-40">
-      {/* Brand — logo only */}
-      <div className="flex items-center justify-center h-16 border-b border-edge/12 flex-shrink-0">
-        <img src={AliScoreLogo} alt="AliScore" className="h-9 w-auto" />
+    <aside className="fixed inset-y-0 left-0 w-44 hidden lg:flex flex-col bg-surface border-r border-edge/12 z-40">
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-4 h-16 border-b border-edge/12 flex-shrink-0">
+        <img src={AliScoreLogo} alt="AliScore" className="h-8 w-auto flex-shrink-0" />
+        <span className="text-sm font-black text-foreground tracking-tight">AliScore</span>
       </div>
 
       {/* Main nav */}
