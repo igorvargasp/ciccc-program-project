@@ -11,6 +11,90 @@
     "notifications": "Notificações",
     "profile": "Configurações"
   },
+  "register": {
+    "heroTitle1": "PREVEJA O",
+    "heroTitle2": "IMPREVISÍVEL.",
+    "heroSubtitle": "Junte-se à plataforma de inteligência de futebol mais avançada do mundo.",
+    "systemAccess": "ACESSO AO SISTEMA",
+    "createAccountTitle": "CRIAR CONTA",
+    "firstName": "PRIMEIRO NOME",
+    "firstNamePlaceholder": "Digite seu primeiro nome",
+    "surname": "SOBRENOME",
+    "surnamePlaceholder": "Digite seu sobrenome",
+    "emailAddress": "ENDEREÇO DE E-MAIL",
+    "password": "SENHA",
+    "securityLevel": "Nível de Segurança:",
+    "confirmPassword": "CONFIRMAR",
+    "agreeText": "Eu concordo com os",
+    "termsOfProtocol": "Termos do Protocolo",
+    "andPrivacyPolicy": "e Política de Privacidade.",
+    "creatingAccount": "CRIANDO CONTA...",
+    "createAccountButton": "CRIAR CONTA",
+    "alreadyMember": "JÁ É MEMBRO?",
+    "logIn": "ENTRAR"
+  },
+  "features": {
+    "tacticalAnalysis": {
+      "name": "Análise Tática",
+      "description": "Mapas de calor em tempo real e mudanças de formação alimentadas por redes neurais.",
+      "tag": "Táticas"
+    },
+    "transferAdvisor": {
+      "name": "Conselheiro de Transferências",
+      "description": "Modelagem preditiva de valor de mercado e ferramentas de comparação de olheiros.",
+      "tag": "Mercado"
+    },
+    "scoutingRadar": {
+      "name": "Radar de Observação",
+      "description": "Identifique talentos globais ocultos usando filtros algorítmicos avançados.",
+      "tag": "Scouting"
+    },
+    "personalizedHub": {
+      "name": "Hub Personalizado",
+      "description": "Seleção do time favorito e painel personalizado adaptado às suas paixões futebolísticas.",
+      "tag": "Dashboard"
+    },
+    "matchCalendar": {
+      "name": "Calendário de Partidas",
+      "description": "Calendário de próximas partidas com análises detalhadas e aprofundadas.",
+      "tag": "Jogos"
+    },
+    "matchHistory": {
+      "name": "Histórico de Partidas",
+      "description": "Dados históricos de partidas e detalhamento de resultados anteriores de torneios globais.",
+      "tag": "Resultados"
+    },
+    "leagueTables": {
+      "name": "Tabelas da Liga",
+      "description": "Classificações atualizadas e tabelas multicompetições rastreadas instantaneamente.",
+      "tag": "Classificação"
+    },
+    "matchSimulator": {
+      "name": "Simulador de Partidas",
+      "description": "Simule resultados de partidas com ajustes de classificação dinâmicos em tempo real.",
+      "tag": "Motor IA"
+    },
+    "dreamLineup": {
+      "name": "Construtor de Escalação",
+      "description": "Construtor de escalação personalizado para configurar e visualizar seu time ideal.",
+      "tag": "Táticas"
+    },
+    "dualTheme": {
+      "name": "Motor de Tema Duplo",
+      "description": "Suporte completo à interface Dark e Light otimizada para uso diurno ou noturno.",
+      "tag": "UI / UX"
+    },
+    "liveAlerts": {
+      "name": "Alertas ao Vivo",
+      "description": "Notificações push em tempo real para partidas ao vivo e atualizações do time favorito.",
+      "tag": "Alertas"
+    },
+    "aiFormations": {
+      "name": "Formações de IA",
+      "description": "Simule partidas e gere automaticamente contra-estratégias para as escalações rivais.",
+      "tag": "Motor IA"
+    }
+  },
   "home": {
     "title": "Smart Football Hub",
     "subtitle": "Placar ao vivo, estatísticas, notícias e simulações — tudo em um só lugar.",
@@ -148,5 +232,26 @@
     "DEF": "Defensor",
     "MID": "Meio-campo",
     "FWD": "Atacante"
+  },
+  "login": {
+    "alertEmptyFields": "Por favor, digite o e-mail e a senha.",
+    "alertInvalidCredentials": "Credenciais inválidas. Tente novamente.",
+    "heroTitlePart1": "PREVEJA O",
+    "heroTitlePart2": "IMPREVISÍVEL",
+    "heroDescription": "Preveja resultados e decifre a telemetria do time através de filtros algorítmicos de aprendizado profundo e arquiteturas avançadas de dados esportivos.",
+    "welcomeBack": "Bem-vindo de volta!",
+    "securitySubtitle": "Forneça suas credenciais de segurança para acessar o console central.",
+    "emailLabel": "Endereço de E-mail",
+    "passwordLabel": "Senha",
+    "rememberWorkstation": "Lembrar desta estação",
+    "recoverKey": "Recuperar Chave?",
+    "authorizing": "Autorizando...",
+    "authorizeSession": "Autorizar Sessão",
+    "identityProvider": "Provedor de Identidade",
+    "newToPlatform": "Novo na plataforma?",
+    "requestRegistration": "Solicitar Registro",
+    "legalDetails": "Detalhes Legais",
+    "privacyNode": "Nó de Privacidade",
+    "securityStandard": "Padrão de Segurança"
   }
 }

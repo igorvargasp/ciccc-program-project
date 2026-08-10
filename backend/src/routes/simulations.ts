@@ -23,7 +23,12 @@ simulationsRouter.post(
     const userId = currentUserId(req);
     const { matchId, homeScore, awayScore } = createSchema.parse(req.body);
 
-    const result = await simulateMatch({ userId, matchId, homeScore, awayScore });
+    const result = await simulateMatch({
+      userId,
+      matchId,
+      homeScore,
+      awayScore,
+    });
     res.status(201).json({ data: result });
   }),
 );

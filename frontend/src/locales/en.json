@@ -11,9 +11,93 @@
     "notifications": "Notifications",
     "profile": "Settings"
   },
+  "register": {
+    "heroTitle1": "PREDICT THE",
+    "heroTitle2": "UNPREDICTED.",
+    "heroSubtitle": "Join the world's most advanced football intelligence platform.",
+    "systemAccess": "SYSTEM ACCESS",
+    "createAccountTitle": "CREATE ACCOUNT",
+    "firstName": "FIRST NAME",
+    "firstNamePlaceholder": "Enter your first name",
+    "surname": "SURNAME",
+    "surnamePlaceholder": "Enter your surname",
+    "emailAddress": "EMAIL ADDRESS",
+    "password": "PASSWORD",
+    "securityLevel": "Security Level:",
+    "confirmPassword": "CONFIRM",
+    "agreeText": "I agree to the",
+    "termsOfProtocol": "Terms of Protocol",
+    "andPrivacyPolicy": "and Privacy Policy.",
+    "creatingAccount": "CREATING ACCOUNT...",
+    "createAccountButton": "CREATE ACCOUNT",
+    "alreadyMember": "ALREADY A MEMBER?",
+    "logIn": "LOG IN"
+  },
+  "features": {
+    "tacticalAnalysis": {
+      "name": "Tactical Analysis",
+      "description": "Real-time heat maps and formation shifts powered by neural networks.",
+      "tag": "Tactics"
+    },
+    "transferAdvisor": {
+      "name": "Transfer Advisor",
+      "description": "Predictive market value modeling and scout-level comparison tools.",
+      "tag": "Market"
+    },
+    "scoutingRadar": {
+      "name": "Scouting Radar",
+      "description": "Identify global hidden talents using advanced algorithmic filters.",
+      "tag": "Scouting"
+    },
+    "personalizedHub": {
+      "name": "Personalized Hub",
+      "description": "Favorite team selection and custom dashboard for your football passions.",
+      "tag": "Dashboard"
+    },
+    "matchCalendar": {
+      "name": "Match Calendar",
+      "description": "Schedule of upcoming matches with in-depth insights and details.",
+      "tag": "Matches"
+    },
+    "matchHistory": {
+      "name": "Match History",
+      "description": "Historical match data and breakdowns of previous results from global tournaments.",
+      "tag": "Results"
+    },
+    "leagueTables": {
+      "name": "League Tables",
+      "description": "Up-to-date league standings and multi-competition tables tracked instantly.",
+      "tag": "Standings"
+    },
+    "matchSimulator": {
+      "name": "Match Simulator",
+      "description": "Simulate match outcomes with dynamic, real-time adjustments to the table.",
+      "tag": "AI Engine"
+    },
+    "dreamLineup": {
+      "name": "Dream Lineup Builder",
+      "description": "Custom team lineup builder to configure and visualize your ultimate tactical board.",
+      "tag": "Tactics"
+    },
+    "dualTheme": {
+      "name": "Dual Theme Engine",
+      "description": "Full interface support for Dark and Light modes, optimized for day or night viewing.",
+      "tag": "UI / UX"
+    },
+    "liveAlerts": {
+      "name": "Live Alerts",
+      "description": "Real-time push notifications for live matches and critical updates from favorite teams.",
+      "tag": "Alerts"
+    },
+    "aiFormations": {
+      "name": "AI Formations",
+      "description": "Simulate matches and automatically generate counters for opponent tactical lineups.",
+      "tag": "AI Engine"
+    }
+  },
   "home": {
-    "title": "Smart Football Hub",
-    "subtitle": "Live scores, stats, news and simulations — all in one place.",
+    "title": "Football Intelligence Hub",
+    "subtitle": "Live scores, stats, news, and simulations — all in one place.",
     "liveMatches": "Live Now",
     "upcomingMatches": "Upcoming Matches",
     "latestNews": "Latest News",
@@ -37,7 +121,7 @@
   },
   "settings": {
     "theme": "Toggle theme",
-    "language": "Switch language",
+    "language": "Change language",
     "title": "Settings",
     "appearance": "Appearance",
     "darkMode": "Dark mode",
@@ -48,7 +132,7 @@
     "notifications": "Notifications",
     "notifyMatches": "Notify me about live matches",
     "notifyTeamNews": "Notify me about team news",
-    "favoriteTeams": "Favourite Teams",
+    "favoriteTeams": "Favorite Teams",
     "account": "Account",
     "signIn": "Sign in to save preferences",
     "signOut": "Sign out"
@@ -59,7 +143,7 @@
     "upcoming": "Upcoming",
     "finished": "Results",
     "all": "All",
-    "kickoff": "Kick-off",
+    "kickoff": "Kickoff",
     "halftime": "HT",
     "fulltime": "FT",
     "matchday": "Matchday {{n}}",
@@ -88,7 +172,7 @@
     "nationality": "Nationality",
     "dateOfBirth": "Date of birth",
     "stats": "Statistics",
-    "appearances": "Apps",
+    "appearances": "Appearances",
     "goals": "Goals",
     "assists": "Assists",
     "minutes": "Minutes",
@@ -98,8 +182,8 @@
     "title": "Competitions",
     "noCompetitions": "No competitions found",
     "standings": "Standings",
-    "realStandings": "Real standings",
-    "simulatedStandings": "Simulated standings",
+    "realStandings": "Real Standings",
+    "simulatedStandings": "Simulated Standings",
     "pos": "Pos",
     "team": "Team",
     "played": "P",
@@ -117,16 +201,16 @@
     "noNews": "No news available",
     "filterByTeam": "Filter by team",
     "allTeams": "All teams",
-    "realtimeActive": "Live updates active"
+    "realtimeActive": "Real-time updates active"
   },
   "simulator": {
     "title": "Match Simulator",
-    "description": "Pick a scheduled match, set your predicted scores and see how the league table would change.",
+    "description": "Choose a scheduled match, set your predicted scores, and see how the league table would change.",
     "selectMatch": "Select a match",
-    "homeScore": "Home score",
-    "awayScore": "Away score",
+    "homeScore": "Home goals",
+    "awayScore": "Away goals",
     "simulate": "Simulate",
-    "projectedStandings": "Projected standings",
+    "projectedStandings": "Projected Standings",
     "history": "Simulation history",
     "noSimulations": "No simulations yet",
     "signInRequired": "Sign in to run simulations",
@@ -148,5 +232,26 @@
     "DEF": "Defender",
     "MID": "Midfielder",
     "FWD": "Forward"
+  },
+  "login": {
+    "alertEmptyFields": "Please enter both email and password.",
+    "alertInvalidCredentials": "Invalid credentials. Please try again.",
+    "heroTitlePart1": "PREDICT THE",
+    "heroTitlePart2": "UNPREDICTED",
+    "heroDescription": "Predict outcomes and decipher squad telemetry through deep-learning algorithmic filters and advanced sports data architectures.",
+    "welcomeBack": "Welcome Back!",
+    "securitySubtitle": "Provide your security credentials to access the central console.",
+    "emailLabel": "Email Address",
+    "passwordLabel": "Password",
+    "rememberWorkstation": "Remember this workstation",
+    "recoverKey": "Recover Key?",
+    "authorizing": "Authorizing...",
+    "authorizeSession": "Authorize Session",
+    "identityProvider": "Identity Provider",
+    "newToPlatform": "New to the platform?",
+    "requestRegistration": "Request Registration",
+    "legalDetails": "Legal Details",
+    "privacyNode": "Privacy Node",
+    "securityStandard": "Security Standard"
   }
 }

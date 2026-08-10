@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from "react-router-dom";
 import {
   Home,
   Newspaper,
@@ -9,24 +9,26 @@ import {
   Bell,
   Settings,
   Swords,
-} from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { cn } from '../../lib/utils';
-import AliScoreLogo from '../../assets/aliscore.svg';
+  Shield,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { cn } from "../../lib/utils";
+import AliScoreLogo from "../../assets/aliscore.svg";
 
 const mainNav = [
-  { to: '/', icon: Home, label: 'nav.home', exact: true },
-  { to: '/matches', icon: Play, label: 'nav.matches' },
-  { to: '/competitions', icon: Trophy, label: 'nav.competitions' },
-  { to: '/teams', icon: Users, label: 'nav.teams' },
-  { to: '/players', icon: User, label: 'nav.players' },
-  { to: '/news', icon: Newspaper, label: 'nav.news' },
-  { to: '/simulator', icon: Swords, label: 'nav.simulator' },
+  { to: "/home", icon: Home, label: "nav.home", exact: true },
+  { to: "/matches", icon: Play, label: "nav.matches" },
+  { to: "/competitions", icon: Trophy, label: "nav.competitions" },
+  { to: "/teams", icon: Users, label: "nav.teams" },
+  { to: "/players", icon: User, label: "nav.players" },
+  { to: "/lineup", icon: Shield, label: "Lineup" },
+  { to: "/news", icon: Newspaper, label: "nav.news" },
+  { to: "/simulator", icon: Swords, label: "nav.simulator" },
 ];
 
 const bottomNav = [
-  { to: '/notifications', icon: Bell, label: 'nav.notifications' },
-  { to: '/profile', icon: Settings, label: 'nav.profile' },
+  { to: "/notifications", icon: Bell, label: "nav.notifications" },
+  { to: "/profile", icon: Settings, label: "nav.profile" },
 ];
 
 function NavLink({
@@ -48,10 +50,10 @@ function NavLink({
     <Link
       to={to}
       className={cn(
-        'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
+        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
         active
-          ? 'bg-brand text-white shadow-sm'
-          : 'text-muted hover:text-foreground hover:bg-surface-2',
+          ? "bg-brand text-white shadow-sm"
+          : "text-muted hover:text-foreground hover:bg-surface-2",
       )}
     >
       <Icon className="w-[18px] h-[18px] flex-shrink-0" />

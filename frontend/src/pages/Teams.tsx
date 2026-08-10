@@ -1,23 +1,23 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { Search } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import { listTeams } from '../api/teams';
-import TeamCard from '../components/TeamCard';
-import { SkeletonCard } from '../components/ui/Skeleton';
-import EmptyState from '../components/ui/EmptyState';
-import { Users } from 'lucide-react';
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { Search } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { listTeams } from "../api/teams";
+import TeamCard from "../components/TeamCard";
+import { SkeletonCard } from "../components/ui/Skeleton";
+import EmptyState from "../components/ui/EmptyState";
+import { Users } from "lucide-react";
 
 export default function Teams() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [input, setInput] = useState(searchParams.get('search') ?? '');
+  const [input, setInput] = useState(searchParams.get("search") ?? "");
 
-  const search = searchParams.get('search') ?? undefined;
+  const search = searchParams.get("search") ?? undefined;
 
   const { data: teams, isLoading } = useQuery({
-    queryKey: ['teams', { search, limit: 100 }],
+    queryKey: ["teams", { search, limit: 100 }],
     queryFn: () => listTeams({ search, limit: 100 }),
   });
 
@@ -31,7 +31,9 @@ export default function Teams() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-black text-foreground">{t('teams.title')}</h1>
+        <h1 className="text-2xl font-black text-foreground">
+          {t("teams.title")}
+        </h1>
       </div>
 
       {/* Search */}
@@ -41,7 +43,7 @@ export default function Teams() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={t('teams.searchPlaceholder')}
+            placeholder={t("teams.searchPlaceholder")}
             className="w-full pl-9 pr-3 py-2 bg-surface-2 border border-edge/12 rounded-lg text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-brand transition-colors"
           />
         </div>
@@ -49,19 +51,23 @@ export default function Teams() {
           type="submit"
           className="px-4 py-2 bg-brand text-white text-sm font-semibold rounded-lg hover:bg-brand-hover transition-colors"
         >
-          {t('common.seeAll').replace('See ', 'Search').replace('Ver ', 'Buscar ')}
+          {t("common.seeAll")
+            .replace("See ", "Search")
+            .replace("Ver ", "Buscar ")}
         </button>
       </form>
 
       {/* Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
+          {Array.from({ length: 9 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       ) : !teams?.length ? (
         <EmptyState
           icon={<Users className="w-12 h-12" />}
-          title={t('teams.noTeams')}
+          title={t("teams.noTeams")}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
