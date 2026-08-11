@@ -1,24 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { listMatches } from "@/api/matches";
 import MatchCard from "@/components/MatchCard";
+import CompetitionPills from "@/components/CompetitionPills";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
 import { Calendar } from "lucide-react";
 import { useTeamsMap } from "@/hooks/useTeamsMap";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { listMatches } from '../api/matches';
-import MatchCard from '../components/MatchCard';
-import CompetitionPills from '../components/CompetitionPills';
-import { SkeletonCard } from '../components/ui/Skeleton';
-import EmptyState from '../components/ui/EmptyState';
-import { Calendar } from 'lucide-react';
-import { useTeamsMap } from '../hooks/useTeamsMap';
-import { cn } from '../lib/utils';
 
 type StatusFilter = "live" | "scheduled" | "finished";
 
@@ -32,8 +23,9 @@ export default function Matches() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [status, setStatus] = useState<StatusFilter>("scheduled");
-  const [status, setStatus] = useState<StatusFilter>('scheduled');
-  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
+  const [competitionId, setCompetitionId] = useState<string | undefined>(
+    undefined,
+  );
   const teamsMap = useTeamsMap();
 
   // Estado para armazenar o time favorito atual (lido do localStorage ou do contexto)
@@ -75,10 +67,14 @@ export default function Matches() {
 
   const selectedTeamId = favoriteTeam?.id || user?.favoriteTeamId;
 
-  // Busca as partidas baseadas exclusivamente no time favorito selecionado
   const { data: matches, isLoading } = useQuery({
-    queryKey: ["team-matches", selectedTeamId, status],
+    queryKey: ["matches", { selectedTeamId, status, competitionId }],
     queryFn: async () => {
+      // With a favourite club picked, show that club's matches; otherwise fall
+      // back to the full list filtered by competition.
+      if (!selectedTeamId) {
+        return listMatches({ status, competitionId, limit: 50 });
+      }
       const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
       const res = await fetch(
         `${baseUrl}/api/teams/${selectedTeamId}/matches?status=${status}`,
@@ -91,11 +87,7 @@ export default function Matches() {
 
       return (json.data || json || []) as any[];
     },
-    enabled: !!selectedTeamId,
     refetchInterval: status === "live" ? 30_000 : undefined,
-    queryKey: ['matches', { status, competitionId }],
-    queryFn: () => listMatches({ status, competitionId, limit: 50 }),
-    refetchInterval: status === 'live' ? 30_000 : undefined,
   });
 
   return (
@@ -113,22 +105,15 @@ export default function Matches() {
         </div>
       </div>
 
-      {/* Se nenhum time favorito estiver selecionado */}
-      {!selectedTeamId ? (
-        <div className="bg-[#14171c] border border-[#414755]/30 p-12 text-center text-xs text-[#8b90a0] uppercase tracking-wider rounded-xl space-y-3">
-          <p>
-            {t(
-              "matches.selectClubPrompt",
-              "Select a favorite club in your preferences to view the matches.",
-            )}
-          </p>
       {/* League filter */}
       <CompetitionPills value={competitionId} onChange={setCompetitionId} />
 
       {/* Matches grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
+          {Array.from({ length: 9 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       ) : (
         <div className="bg-[#14171c] border border-[#414755]/30 p-6 space-y-4 rounded-xl">

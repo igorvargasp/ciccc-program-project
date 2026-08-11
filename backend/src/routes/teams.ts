@@ -1,10 +1,6 @@
 import { Router } from "express";
-<<<<<<< HEAD
-import { and, or, eq, asc, ilike } from "drizzle-orm";
+import { and, or, eq, asc, ilike, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-=======
-import { and, asc, eq, ilike, inArray } from "drizzle-orm";
->>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
 import { z } from "zod";
 import { db } from "../db/index.js";
 import {

@@ -5,37 +5,23 @@ import { Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { listTeams } from "../api/teams";
 import TeamCard from "../components/TeamCard";
+import CompetitionPills from "../components/CompetitionPills";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import EmptyState from "../components/ui/EmptyState";
 import { Users } from "lucide-react";
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { Search } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import { listTeams } from '../api/teams';
-import TeamCard from '../components/TeamCard';
-import CompetitionPills from '../components/CompetitionPills';
-import { SkeletonCard } from '../components/ui/Skeleton';
-import EmptyState from '../components/ui/EmptyState';
-import { Users } from 'lucide-react';
 
 export default function Teams() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
-<<<<<<< HEAD
   const [input, setInput] = useState(searchParams.get("search") ?? "");
-=======
-  const [input, setInput] = useState(searchParams.get('search') ?? '');
-  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
->>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
+  const [competitionId, setCompetitionId] = useState<string | undefined>(
+    undefined,
+  );
 
   const search = searchParams.get("search") ?? undefined;
 
   const { data: teams, isLoading } = useQuery({
-    queryKey: ["teams", { search, limit: 100 }],
-    queryFn: () => listTeams({ search, limit: 100 }),
-    queryKey: ['teams', { search, competitionId, limit: 100 }],
+    queryKey: ["teams", { search, competitionId, limit: 100 }],
     queryFn: () => listTeams({ search, competitionId, limit: 100 }),
   });
 

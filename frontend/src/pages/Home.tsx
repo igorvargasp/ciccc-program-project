@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -6,15 +5,19 @@ import { useTranslation } from "react-i18next";
 import { ArrowRight, Radio } from "lucide-react";
 import { listMatches } from "../api/matches";
 import { listNews } from "../api/news";
+import { listCompetitions } from "../api/competitions";
 import MatchCard from "../components/MatchCard";
 import NewsCard from "../components/NewsCard";
 import { useTeamsMap } from "../hooks/useTeamsMap";
 import { useNewsRealtime } from "../hooks/useRealtime";
 import { SkeletonCard } from "@/components/ui/Skeleton";
+import { cn } from "../lib/utils";
 import {
   SelectFavoriteTeamModal,
   Team,
 } from "@/components/modals/SelectFavoriteTeamModal";
+
+const UPCOMING_PAGE_SIZE = 6;
 
 interface HeroSectionProps {
   onOpenTeamModal: () => void;
@@ -94,31 +97,16 @@ function HeroSection({ onOpenTeamModal, selectedTeam }: HeroSectionProps) {
     </section>
   );
 }
-=======
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { ArrowRight, Radio } from 'lucide-react';
-import { listMatches } from '../api/matches';
-import { listNews } from '../api/news';
-import { listCompetitions } from '../api/competitions';
-import MatchCard from '../components/MatchCard';
-import NewsCard from '../components/NewsCard';
-import { useTeamsMap } from '../hooks/useTeamsMap';
-import { useNewsRealtime } from '../hooks/useRealtime';
-import { SkeletonCard } from '../components/ui/Skeleton';
-import { cn } from '../lib/utils';
-
-const UPCOMING_PAGE_SIZE = 6;
->>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
 
 export default function Home() {
   const { t } = useTranslation();
   const teamsMap = useTeamsMap();
-<<<<<<< HEAD
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [competitionId, setCompetitionId] = useState<string | undefined>(
+    undefined,
+  );
+  const [showAll, setShowAll] = useState(false);
 
   // Carrega o time favorito ao iniciar e escuta alterações
   useEffect(() => {
@@ -143,10 +131,6 @@ export default function Home() {
       window.removeEventListener("favoriteTeamChanged", loadFavoriteTeam);
     };
   }, []);
-=======
-  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
-  const [showAll, setShowAll] = useState(false);
->>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
 
   // Subscribe to live news via Socket.IO
   useNewsRealtime();
@@ -167,10 +151,13 @@ export default function Home() {
 
   // Busca as partidas agendadas estritamente do time favorito
   const { data: upcomingMatches, isLoading: loadingUpcoming } = useQuery({
-<<<<<<< HEAD
-    queryKey: ["team-matches", teamId, "scheduled"],
+    queryKey: ["upcoming-matches", { teamId, competitionId }],
     queryFn: async () => {
-      if (!teamId) return [];
+      // With a favourite club picked, show that club's fixtures; otherwise fall
+      // back to the full scheduled list filtered by competition.
+      if (!teamId) {
+        return listMatches({ status: "scheduled", competitionId, limit: 50 });
+      }
       const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
       const res = await fetch(
         `${baseUrl}/api/teams/${teamId}/matches?status=scheduled`,
@@ -181,11 +168,6 @@ export default function Home() {
       }
       return (json.data || json || []) as any[];
     },
-    enabled: !!teamId,
-=======
-    queryKey: ['matches', { status: 'scheduled', competitionId }],
-    queryFn: () => listMatches({ status: 'scheduled', competitionId, limit: 50 }),
->>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
     staleTime: 60_000,
   });
 
@@ -294,18 +276,15 @@ export default function Home() {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-<<<<<<< HEAD
           {loadingUpcoming ? (
-            Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-          ) : !teamId ? (
-            <p className="text-muted text-sm col-span-full">
-              {t(
-                "matches.selectClubPrompt",
-                "Select a favorite club to view matches.",
-              )}
-            </p>
+            Array.from({ length: UPCOMING_PAGE_SIZE }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))
           ) : upcomingMatches?.length ? (
-            upcomingMatches.slice(0, 6).map((m) => {
+            (showAll
+              ? upcomingMatches
+              : upcomingMatches.slice(0, UPCOMING_PAGE_SIZE)
+            ).map((m) => {
               const homeTeamObj =
                 typeof m.homeTeam === "object"
                   ? m.homeTeam
@@ -333,20 +312,6 @@ export default function Home() {
               {t("common.noData")}
             </p>
           )}
-=======
-          {loadingUpcoming
-            ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-            : upcomingMatches?.length
-              ? (showAll ? upcomingMatches : upcomingMatches.slice(0, UPCOMING_PAGE_SIZE)).map((m) => (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    homeTeam={teamsMap.get(m.homeTeamId)}
-                    awayTeam={teamsMap.get(m.awayTeamId)}
-                  />
-                ))
-              : <p className="text-muted text-sm col-span-full">{t('common.noData')}</p>}
->>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
         </div>
 
         {/* Show more / show less */}

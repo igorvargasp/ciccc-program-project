@@ -2,11 +2,7 @@ import { Router } from "express";
 import { and, asc, desc, eq, gte, inArray, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
-<<<<<<< HEAD
 import { matches, matchEvents, seasons, competitions } from "../db/schema.js";
-=======
-import { matches, matchEvents, seasons } from "../db/schema.js";
->>>>>>> 667cbfd03bb4861ee4272c14f9bb22733685ade8
 import { asyncHandler } from "../lib/async-handler.js";
 import { notFound } from "../lib/http-error.js";
 
