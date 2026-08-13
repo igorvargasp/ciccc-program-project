@@ -6,14 +6,15 @@ import MatchCard from "@/components/MatchCard";
 import CompetitionPills from "@/components/CompetitionPills";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
-import { Calendar } from "lucide-react";
+import { Star, Layers, Trophy, Radio, Clock, History } from "lucide-react";
 import { useTeamsMap } from "@/hooks/useTeamsMap";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
+type ViewMode = "status" | "my-team";
 type StatusFilter = "live" | "scheduled" | "finished";
 
-const TABS: { key: StatusFilter; label: string }[] = [
+const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: "live", label: "matches.live" },
   { key: "scheduled", label: "matches.upcoming" },
   { key: "finished", label: "matches.finished" },
@@ -22,16 +23,23 @@ const TABS: { key: StatusFilter; label: string }[] = [
 export default function Matches() {
   const { t } = useTranslation();
   const { user } = useAuth();
+
+  const [viewMode, setViewMode] = useState<ViewMode>("status");
   const [status, setStatus] = useState<StatusFilter>("scheduled");
   const [competitionId, setCompetitionId] = useState<string | undefined>(
     undefined,
   );
+  const [matchday, setMatchday] = useState<string | undefined>(undefined);
+
+  const [nextLimit, setNextLimit] = useState(6);
+  const [resultsLimit, setResultsLimit] = useState(6);
+
   const teamsMap = useTeamsMap();
 
-  // Estado para armazenar o time favorito atual (lido do localStorage ou do contexto)
   const [favoriteTeam, setFavoriteTeam] = useState<{
     id: string | number;
     name: string;
+    competitionId?: string | number;
   } | null>(() => {
     const saved = localStorage.getItem("favorite_team");
     if (saved) {
@@ -44,7 +52,6 @@ export default function Matches() {
     return null;
   });
 
-  // Ouve eventos de mudança de time favorito para atualizar o estado em tempo real
   useEffect(() => {
     const handleFavoriteChange = () => {
       const saved = localStorage.getItem("favorite_team");
@@ -67,28 +74,130 @@ export default function Matches() {
 
   const selectedTeamId = favoriteTeam?.id || user?.favoriteTeamId;
 
+  const teamObj = selectedTeamId ? teamsMap.get(selectedTeamId) : null;
+  const teamCompetitionId = String(
+    favoriteTeam?.competitionId ||
+      (teamObj as any)?.competitionId ||
+      (teamObj as any)?.leagueId ||
+      "",
+  );
+
+  const shouldShowMyTeamButton =
+    selectedTeamId &&
+    (!competitionId ||
+      (teamCompetitionId && String(competitionId) === teamCompetitionId));
+
   const { data: matches, isLoading } = useQuery({
-    queryKey: ["matches", { selectedTeamId, status, competitionId }],
+    queryKey: [
+      "matches",
+      { viewMode, selectedTeamId, status, competitionId, matchday },
+    ],
     queryFn: async () => {
-      // With a favourite club picked, show that club's matches; otherwise fall
-      // back to the full list filtered by competition.
-      if (!selectedTeamId) {
-        return listMatches({ status, competitionId, limit: 50 });
-      }
       const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
-      const res = await fetch(
-        `${baseUrl}/api/teams/${selectedTeamId}/matches?status=${status}`,
-      );
-      const json = await res.json();
 
-      if (!res.ok) {
-        throw new Error(json.error || "Error fetching matches.");
+      if (viewMode === "my-team") {
+        if (!selectedTeamId) return [];
+        const res = await fetch(
+          `${baseUrl}/api/teams/${selectedTeamId}/matches`,
+        );
+        const json = await res.json();
+        if (!res.ok)
+          throw new Error(json.error || "Error fetching team matches.");
+
+        let data = (json.data || json || []) as any[];
+        if (matchday) {
+          data = data.filter(
+            (m: any) => String(m.matchday || m.round) === matchday,
+          );
+        }
+        return data;
       }
 
-      return (json.data || json || []) as any[];
+      return listMatches({
+        status,
+        competitionId,
+        matchday: matchday ? Number(matchday) : undefined,
+        limit: 100,
+      });
     },
-    refetchInterval: status === "live" ? 30_000 : undefined,
+    refetchInterval:
+      status === "live" || viewMode === "my-team" ? 30_000 : undefined,
   });
+
+  // Busca o nome e o emblema/bandeira da liga selecionada direto da query de competições
+  const { data: competitionsData } = useQuery({ queryKey: ["competitions"] });
+  const selectedCompObj = competitionsData?.find(
+    (c: any) => String(c.id) === String(competitionId),
+  );
+  const activeCompetitionName = selectedCompObj?.name;
+  const competitionFlag =
+    selectedCompObj?.emblem || selectedCompObj?.area?.flag;
+
+  useEffect(() => {
+    setMatchday(undefined);
+  }, [competitionId, viewMode]);
+
+  useEffect(() => {
+    if (viewMode === "my-team") {
+      setNextLimit(6);
+      setResultsLimit(6);
+    }
+  }, [viewMode]);
+
+  const groupMatchesByCompetition = (matchList: any[]) => {
+    const groups: {
+      [key: string]: { competitionName: string; matches: any[] };
+    } = {};
+
+    matchList.forEach((m) => {
+      const compId = m.competitionId || m.competition?.id || "other";
+      const compName =
+        m.competition?.name || m.competitionName || "Outras Competições";
+
+      if (!groups[compId]) {
+        groups[compId] = {
+          competitionName: compName,
+          matches: [],
+        };
+      }
+      groups[compId].matches.push(m);
+    });
+
+    return Object.values(groups);
+  };
+
+  const groupedMatches =
+    !competitionId && matches && Array.isArray(matches)
+      ? groupMatchesByCompetition(matches)
+      : [];
+
+  const myTeamLiveMatches =
+    viewMode === "my-team" && Array.isArray(matches)
+      ? matches.filter(
+          (m: any) => m.status === "live" || m.isLive || m.status === "IN_PLAY",
+        )
+      : [];
+
+  const myTeamUpcomingMatches =
+    viewMode === "my-team" && Array.isArray(matches)
+      ? matches.filter(
+          (m: any) =>
+            m.status === "scheduled" ||
+            m.status === "TIMED" ||
+            m.status === "UPCOMING" ||
+            (!m.status && new Date(m.date || m.utcDate) > new Date()),
+        )
+      : [];
+
+  const myTeamFinishedMatches =
+    viewMode === "my-team" && Array.isArray(matches)
+      ? matches.filter(
+          (m: any) =>
+            m.status === "finished" ||
+            m.status === "FT" ||
+            m.status === "FINISHED",
+        )
+      : [];
 
   return (
     <div className="space-y-6">
@@ -97,92 +206,349 @@ export default function Matches() {
           <h1 className="text-2xl font-black text-foreground">
             {t("matches.title", "Matches and Schedule")}
           </h1>
-          {favoriteTeam && (
+          {favoriteTeam && viewMode === "my-team" && (
             <p className="text-xs text-[#00d2fd] font-bold uppercase tracking-wider mt-1">
-              Showing matches for: {favoriteTeam.name}
+              Showing telemetry and fixtures for: {favoriteTeam.name}
             </p>
           )}
         </div>
       </div>
 
-      {/* League filter */}
-      <CompetitionPills value={competitionId} onChange={setCompetitionId} />
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {viewMode === "status" && (
+          <div className="flex-1 overflow-x-auto pb-1">
+            <CompetitionPills
+              value={competitionId}
+              onChange={setCompetitionId}
+            />
+          </div>
+        )}
 
-      {/* Matches grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Array.from({ length: 9 }).map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-[#14171c] border border-[#414755]/30 p-6 space-y-4 rounded-xl">
-          {/* Header & Status Tabs */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#414755]/30 pb-3">
-            <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="material-symbols-outlined text-sm">event</span>
-              {t("matches.scheduleTitle", "Telemetry Schedule")}
-            </h3>
+        {competitionId && viewMode === "status" && (
+          <div className="relative flex items-center min-w-[180px]">
+            <div className="absolute left-3 text-[#00d2fd] pointer-events-none flex items-center">
+              <Layers className="w-4 h-4" />
+            </div>
+            <select
+              value={matchday || ""}
+              onChange={(e) => setMatchday(e.target.value || undefined)}
+              className="w-full bg-[#14171c] border border-[#414755]/40 rounded-xl pl-9 pr-8 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:border-[#00d2fd] transition-all cursor-pointer appearance-none shadow-md hover:border-[#414755]"
+            >
+              <option value="">Todas as Rodadas</option>
+              {Array.from({ length: 38 }, (_, i) => i + 1).map((round) => (
+                <option key={round} value={round}>
+                  Rodada {round}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3 pointer-events-none text-[#8b90a0] text-xs">
+              ▼
+            </div>
+          </div>
+        )}
+      </div>
 
-            {/* Status Tabs */}
-            <div className="flex gap-1 bg-surface-2 rounded-xl p-1 w-fit">
-              {TABS.map(({ key, label }) => (
+      <div className="bg-[#14171c] border border-[#414755]/30 p-6 space-y-4 rounded-xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#414755]/30 pb-3">
+          <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em] flex items-center gap-2">
+            {viewMode === "my-team" ? (
+              <Star className="w-4 h-4 text-amber-400 fill-current" />
+            ) : competitionId && competitionFlag ? (
+              <img
+                src={competitionFlag}
+                alt=""
+                className="w-4 h-4 object-contain rounded-full"
+              />
+            ) : (
+              <Trophy className="w-4 h-4 text-[#00d2fd]" />
+            )}
+
+            {viewMode === "my-team"
+              ? `${favoriteTeam?.name || "My Team"} Dashboard`
+              : competitionId && activeCompetitionName
+                ? activeCompetitionName
+                : t("matches.scheduleTitle", "Telemetry Schedule")}
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-1.5 bg-surface-2 rounded-xl p-1 w-fit">
+            {STATUS_TABS.map(({ key, label }) => {
+              const isActive = viewMode === "status" && status === key;
+              return (
                 <button
                   key={key}
-                  onClick={() => setStatus(key)}
+                  onClick={() => {
+                    setViewMode("status");
+                    setStatus(key);
+                  }}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all",
-                    status === key
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+                    isActive
                       ? "bg-[#00d2fd] text-black"
                       : "text-[#8b90a0] hover:text-foreground",
                   )}
                 >
-                  {key === "live" && status === "live" && (
+                  {key === "live" && isActive && (
                     <span className="w-1.5 h-1.5 rounded-full bg-black animate-pulse" />
                   )}
                   {t(label, key)}
                 </button>
-              ))}
+              );
+            })}
+
+            {shouldShowMyTeamButton && (
+              <>
+                <div className="w-[1px] h-4 bg-[#414755]/50 mx-0.5 hidden sm:block" />
+                <button
+                  onClick={() => setViewMode("my-team")}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                    viewMode === "my-team"
+                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg"
+                      : "text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10",
+                  )}
+                >
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                  <span>My Team</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* CONTEÚDO DA PÁGINA */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : viewMode === "my-team" ? (
+          <div className="space-y-10">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-[#414755]/20 pb-2">
+                <Radio className="w-4 h-4 text-red-500 animate-pulse" />
+                <h4 className="text-sm font-black text-foreground uppercase tracking-wider">
+                  Live Match
+                </h4>
+              </div>
+
+              {myTeamLiveMatches.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {myTeamLiveMatches.map((m: any) => {
+                    const homeTeamObj =
+                      typeof m.homeTeam === "object"
+                        ? m.homeTeam
+                        : teamsMap.get(m.homeTeamId);
+                    const awayTeamObj =
+                      typeof m.awayTeam === "object"
+                        ? m.awayTeam
+                        : teamsMap.get(m.awayTeamId);
+                    return (
+                      <MatchCard
+                        key={m.id}
+                        match={m}
+                        homeTeam={homeTeamObj}
+                        awayTeam={awayTeamObj}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="bg-[#1a1f29]/60 border border-[#414755]/20 rounded-xl p-6 text-center space-y-2">
+                  <p className="text-xs font-medium text-[#8b90a0]">
+                    Your team is not currently participating in any live matches
+                    at the moment. Check back later during matchdays.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-[#414755]/20 pb-2">
+                <Clock className="w-4 h-4 text-[#00d2fd]" />
+                <h4 className="text-sm font-black text-foreground uppercase tracking-wider">
+                  Next Matches
+                </h4>
+              </div>
+
+              {myTeamUpcomingMatches.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {myTeamUpcomingMatches.slice(0, nextLimit).map((m: any) => {
+                      const homeTeamObj =
+                        typeof m.homeTeam === "object"
+                          ? m.homeTeam
+                          : teamsMap.get(m.homeTeamId);
+                      const awayTeamObj =
+                        typeof m.awayTeam === "object"
+                          ? m.awayTeam
+                          : teamsMap.get(m.awayTeamId);
+                      return (
+                        <MatchCard
+                          key={m.id}
+                          match={m}
+                          homeTeam={homeTeamObj}
+                          awayTeam={awayTeamObj}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  {(nextLimit < myTeamUpcomingMatches.length ||
+                    nextLimit > 6) && (
+                    <div className="flex justify-center gap-3 pt-2">
+                      {nextLimit < myTeamUpcomingMatches.length && (
+                        <button
+                          onClick={() => setNextLimit((prev) => prev + 6)}
+                          className="px-5 py-2 text-xs font-bold bg-[#414755]/20 hover:bg-[#414755]/40 text-foreground rounded-xl transition-all border border-[#414755]/30 cursor-pointer"
+                        >
+                          Show More
+                        </button>
+                      )}
+                      {nextLimit > 6 && (
+                        <button
+                          onClick={() => setNextLimit(6)}
+                          className="px-5 py-2 text-xs font-bold bg-[#414755]/20 hover:bg-[#414755]/40 text-foreground rounded-xl transition-all border border-[#414755]/30 cursor-pointer"
+                        >
+                          Show Less
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-[#8b90a0] py-2">
+                  No upcoming matches scheduled.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-[#414755]/20 pb-2">
+                <History className="w-4 h-4 text-amber-400" />
+                <h4 className="text-sm font-black text-foreground uppercase tracking-wider">
+                  Results
+                </h4>
+              </div>
+
+              {myTeamFinishedMatches.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {myTeamFinishedMatches
+                      .slice(0, resultsLimit)
+                      .map((m: any) => {
+                        const homeTeamObj =
+                          typeof m.homeTeam === "object"
+                            ? m.homeTeam
+                            : teamsMap.get(m.homeTeamId);
+                        const awayTeamObj =
+                          typeof m.awayTeam === "object"
+                            ? m.awayTeam
+                            : teamsMap.get(m.awayTeamId);
+                        return (
+                          <MatchCard
+                            key={m.id}
+                            match={m}
+                            homeTeam={homeTeamObj}
+                            awayTeam={awayTeamObj}
+                          />
+                        );
+                      })}
+                  </div>
+
+                  {(resultsLimit < myTeamFinishedMatches.length ||
+                    resultsLimit > 6) && (
+                    <div className="flex justify-center gap-3 pt-2">
+                      {resultsLimit < myTeamFinishedMatches.length && (
+                        <button
+                          onClick={() => setResultsLimit((prev) => prev + 6)}
+                          className="px-5 py-2 text-xs font-bold bg-[#414755]/20 hover:bg-[#414755]/40 text-foreground rounded-xl transition-all border border-[#414755]/30 cursor-pointer"
+                        >
+                          Show More
+                        </button>
+                      )}
+                      {resultsLimit > 6 && (
+                        <button
+                          onClick={() => setResultsLimit(6)}
+                          className="px-5 py-2 text-xs font-bold bg-[#414755]/20 hover:bg-[#414755]/40 text-foreground rounded-xl transition-all border border-[#414755]/30 cursor-pointer"
+                        >
+                          Show Less
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-[#8b90a0] py-2">
+                  No finished matches found.
+                </p>
+              )}
             </div>
           </div>
+        ) : !matches?.length ? (
+          <EmptyState
+            icon={<Trophy className="w-10 h-10 text-[#8b90a0]" />}
+            title={t("matches.noMatches", "No matches found.")}
+          />
+        ) : !competitionId && viewMode === "status" ? (
+          <div className="space-y-8">
+            {groupedMatches.map((group, idx) => (
+              <div key={idx} className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-[#414755]/20 pb-2 pt-2">
+                  <Trophy className="w-4 h-4 text-[#00d2fd]" />
+                  <h4 className="text-sm font-black text-foreground uppercase tracking-wider">
+                    {group.competitionName}
+                  </h4>
+                </div>
 
-          {/* Matches Content Grid */}
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <SkeletonCard key={i} />
-              ))}
-            </div>
-          ) : !matches?.length ? (
-            <EmptyState
-              icon={<Calendar className="w-10 h-10 text-[#8b90a0]" />}
-              title={t("matches.noMatches", "No matches found.")}
-            />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {matches.map((m) => {
-                const homeTeamObj =
-                  typeof m.homeTeam === "object"
-                    ? m.homeTeam
-                    : teamsMap.get(m.homeTeamId);
-                const awayTeamObj =
-                  typeof m.awayTeam === "object"
-                    ? m.awayTeam
-                    : teamsMap.get(m.awayTeamId);
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {group.matches.map((m) => {
+                    const homeTeamObj =
+                      typeof m.homeTeam === "object"
+                        ? m.homeTeam
+                        : teamsMap.get(m.homeTeamId);
+                    const awayTeamObj =
+                      typeof m.awayTeam === "object"
+                        ? m.awayTeam
+                        : teamsMap.get(m.awayTeamId);
 
-                return (
-                  <MatchCard
-                    key={m.id}
-                    match={m}
-                    homeTeam={homeTeamObj}
-                    awayTeam={awayTeamObj}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                    return (
+                      <MatchCard
+                        key={m.id}
+                        match={m}
+                        homeTeam={homeTeamObj}
+                        awayTeam={awayTeamObj}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {matches.map((m) => {
+              const homeTeamObj =
+                typeof m.homeTeam === "object"
+                  ? m.homeTeam
+                  : teamsMap.get(m.homeTeamId);
+              const awayTeamObj =
+                typeof m.awayTeam === "object"
+                  ? m.awayTeam
+                  : teamsMap.get(m.awayTeamId);
+
+              return (
+                <MatchCard
+                  key={m.id}
+                  match={m}
+                  homeTeam={homeTeamObj}
+                  awayTeam={awayTeamObj}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

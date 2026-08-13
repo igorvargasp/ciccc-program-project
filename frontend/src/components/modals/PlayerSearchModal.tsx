@@ -3,16 +3,20 @@ import { Search, X } from "lucide-react";
 
 interface Player {
   id: string | number;
-  fullName: string; // Atualizado para corresponder ao seu schema do backend
-  photoUrl?: string | null; // Atualizado aqui
+  fullName: string;
+  photoUrl?: string | null;
   position: string;
+  // Informações adicionais integradas da nova API / backend
+  nationality?: string | null;
+  teamName?: string | null;
+  photoSource?: string | null;
 }
 
 interface PlayerSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectPlayer: (player: Player) => void;
-  positionFilter?: string; // Opcional: para filtrar pela posição do slot (ex: "GK", "DEF", etc.)
+  positionFilter?: string;
 }
 
 export default function PlayerSearchModal({
@@ -31,16 +35,14 @@ export default function PlayerSearchModal({
     const fetchPlayers = async () => {
       setLoading(true);
       try {
-        // Constrói osquery params com base no que sua API aceita
         const params = new URLSearchParams();
         if (searchTerm) params.append("search", searchTerm);
         if (positionFilter) params.append("position", positionFilter);
-        params.append("limit", "20"); // Limita a 20 resultados para otimizar
+        params.append("limit", "20");
 
         const response = await fetch(`/api/players?${params.toString()}`);
         const result = await response.json();
 
-        // A sua API retorna { data: rows }
         setPlayers(result.data || []);
       } catch (error) {
         console.error("Erro ao buscar jogadores:", error);
@@ -123,9 +125,21 @@ export default function PlayerSearchModal({
                   <h4 className="text-xs font-bold text-white truncate group-hover:text-[#00d2fd] transition-colors">
                     {player.fullName}
                   </h4>
-                  <p className="text-[10px] text-[#8b90a0]">
-                    {player.position}
-                  </p>
+                  <div className="flex items-center gap-2 text-[10px] text-[#8b90a0]">
+                    <span>{player.position}</span>
+                    {player.teamName && (
+                      <>
+                        <span>•</span>
+                        <span className="truncate">{player.teamName}</span>
+                      </>
+                    )}
+                    {player.nationality && (
+                      <>
+                        <span>•</span>
+                        <span>{player.nationality}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ))

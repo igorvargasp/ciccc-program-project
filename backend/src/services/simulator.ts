@@ -53,14 +53,19 @@ function rank(rows: Row[]): (Row & { position: number })[] {
  *   - broadcasts the new table to the season room and the requesting user.
  */
 export async function simulateMatch(params: {
-  userId: string;
+  userId: string | null;
   matchId: string;
   homeScore: number;
   awayScore: number;
 }) {
-  const [match] = await db.select().from(matches).where(eq(matches.id, params.matchId)).limit(1);
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.id, params.matchId))
+    .limit(1);
   if (!match) throw notFound("Match");
-  if (!match.seasonId) throw new HttpError(400, "Match is not attached to a season");
+  if (!match.seasonId)
+    throw new HttpError(400, "Match is not attached to a season");
 
   const seasonId = match.seasonId;
 
@@ -79,7 +84,9 @@ export async function simulateMatch(params: {
     })
     .from(standings)
     .innerJoin(teams, eq(standings.teamId, teams.id))
-    .where(and(eq(standings.seasonId, seasonId), eq(standings.isSimulated, false)));
+    .where(
+      and(eq(standings.seasonId, seasonId), eq(standings.isSimulated, false)),
+    );
 
   const table = new Map<string, Row>(baseRows.map((r) => [r.teamId, { ...r }]));
 
@@ -113,7 +120,9 @@ export async function simulateMatch(params: {
   // Refresh the season's shared simulated standings (replace previous snapshot).
   await db
     .delete(standings)
-    .where(and(eq(standings.seasonId, seasonId), eq(standings.isSimulated, true)));
+    .where(
+      and(eq(standings.seasonId, seasonId), eq(standings.isSimulated, true)),
+    );
   await db.insert(standings).values(
     ranked.map((r) => ({
       seasonId,
@@ -144,7 +153,9 @@ export async function simulateMatch(params: {
 
   const payload = { seasonId, matchId: params.matchId, table: ranked };
   emitTo(room.season(seasonId), RT.STANDINGS_UPDATE, payload);
-  emitTo(room.user(params.userId), RT.STANDINGS_UPDATE, payload);
+  if (params.userId) {
+    emitTo(room.user(params.userId), RT.STANDINGS_UPDATE, payload);
+  }
 
   return { simulation, table: ranked };
 }

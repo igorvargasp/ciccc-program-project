@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Swords, History, Lock, Sparkles, Activity } from "lucide-react";
+import { Swords, History, Sparkles, Activity, Star } from "lucide-react";
 import { listMatches } from "../api/matches";
+import { listCompetitions } from "../api/competitions";
 import { createSimulation, listSimulations } from "../api/simulations";
 import { useTeamsMap } from "../hooks/useTeamsMap";
 import { useAppStore } from "../store/app";
+import { useAuth } from "../context/AuthContext";
 import StandingsTable from "../components/StandingsTable";
 import Button from "../components/ui/Button";
 import { PageSpinner } from "../components/ui/Spinner";
@@ -16,7 +18,12 @@ export default function Simulator() {
   const { t } = useTranslation();
   const teamsMap = useTeamsMap();
   const token = useAppStore((s) => s.token);
+  const { user } = useAuth();
   const qc = useQueryClient();
+
+  const [activeTab, setActiveTab] = useState<"general" | "my-team">("general");
+  const [selectedCompetitionId, setSelectedCompetitionId] =
+    useState<string>("");
 
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [homeScore, setHomeScore] = useState(0);
@@ -26,17 +33,53 @@ export default function Simulator() {
   );
   const [aiInsight, setAiInsight] = useState<any>(null);
 
-  // Só busca as partidas se o usuário estiver logado
+  // Fetch competitions for filtering
+  const { data: competitions } = useQuery({
+    queryKey: ["competitions"],
+    queryFn: listCompetitions,
+    enabled: true,
+  });
+
+  // Fetch ALL matches to ensure history mapping works and doesn't show "? vs ?"
+  const { data: allMatches } = useQuery({
+    queryKey: ["matches", "all"],
+    queryFn: () => listMatches({ limit: 200 }),
+    enabled: true,
+  });
+
+  // General scheduled matches with optional competition filter
   const { data: scheduledMatches } = useQuery({
-    queryKey: ["matches", { status: "scheduled", limit: 30 }],
-    queryFn: () => listMatches({ status: "scheduled", limit: 30 }),
-    enabled: !!token,
+    queryKey: [
+      "matches",
+      { status: "scheduled", competitionId: selectedCompetitionId, limit: 50 },
+    ],
+    queryFn: () =>
+      listMatches({
+        status: "scheduled",
+        competitionId: selectedCompetitionId || undefined,
+        limit: 50,
+      }),
+    enabled: true,
+  });
+
+  const favoriteTeamId =
+    user?.favoriteTeamId || localStorage.getItem("favorite_team_id");
+
+  // My team scheduled matches
+  const { data: myTeamMatches } = useQuery({
+    queryKey: [
+      "matches",
+      { teamId: favoriteTeamId, status: "scheduled", limit: 20 },
+    ],
+    queryFn: () =>
+      listMatches({ teamId: favoriteTeamId!, status: "scheduled", limit: 20 }),
+    enabled: !!favoriteTeamId && activeTab === "my-team",
   });
 
   const { data: simulations, isLoading: loadingSims } = useQuery({
     queryKey: ["simulations"],
     queryFn: listSimulations,
-    enabled: !!token,
+    enabled: true,
   });
 
   const simulate = useMutation({
@@ -49,26 +92,17 @@ export default function Simulator() {
     },
   });
 
-  const selectedMatch = scheduledMatches?.find((m) => m.id === selectedMatchId);
+  const activeMatchesList =
+    activeTab === "my-team" ? myTeamMatches : scheduledMatches;
+  const selectedMatch = activeMatchesList?.find(
+    (m) => m.id === selectedMatchId,
+  );
   const homeTeam = selectedMatch
     ? teamsMap.get(selectedMatch.homeTeamId)
     : undefined;
   const awayTeam = selectedMatch
     ? teamsMap.get(selectedMatch.awayTeamId)
     : undefined;
-
-  // Tela de bloqueio caso o usuário não esteja logado
-  if (!token) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
-        <Lock className="w-12 h-12 text-muted opacity-40" />
-        <h2 className="text-xl font-extrabold text-foreground">
-          {t("simulator.title")}
-        </h2>
-        <p className="text-muted max-w-sm">{t("simulator.signInRequired")}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -80,35 +114,105 @@ export default function Simulator() {
         <p className="text-muted mt-1 text-sm">{t("simulator.description")}</p>
       </div>
 
+      {/* Mode Tabs & Competition Filter Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex gap-1 bg-surface-2 rounded-xl p-1 w-fit border border-edge/12">
+          <button
+            onClick={() => {
+              setActiveTab("general");
+              setSelectedMatchId("");
+              setResultStandings(null);
+              setAiInsight(null);
+            }}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+              activeTab === "general"
+                ? "bg-brand text-white shadow-sm"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            All Matches
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("my-team");
+              setSelectedMatchId("");
+              setResultStandings(null);
+              setAiInsight(null);
+            }}
+            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+              activeTab === "my-team"
+                ? "bg-brand text-white shadow-sm"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            <Star className="w-3.5 h-3.5" /> My Team Simulator
+          </button>
+        </div>
+
+        {/* Competition Filter Selector */}
+        {activeTab === "general" && competitions && (
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedCompetitionId}
+              onChange={(e) => {
+                setSelectedCompetitionId(e.target.value);
+                setSelectedMatchId("");
+                setResultStandings(null);
+                setAiInsight(null);
+              }}
+              className="bg-surface-2 border border-edge/12 rounded-xl px-3 py-2 text-xs font-semibold text-foreground focus:outline-none focus:border-brand transition-colors"
+            >
+              <option value="">All Competitions</option>
+              {competitions.map((comp: any) => (
+                <option key={comp.id} value={comp.id}>
+                  {comp.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       {/* Match selector */}
       <div className="bg-surface border border-edge/12 rounded-2xl p-5 space-y-4 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-brand/5 rounded-full blur-2xl pointer-events-none"></div>
 
         <h2 className="text-base font-extrabold text-foreground">
-          {t("simulator.selectMatch")}
+          {activeTab === "my-team"
+            ? "Select Your Team's Upcoming Match"
+            : t("simulator.selectMatch")}
         </h2>
 
-        <select
-          value={selectedMatchId}
-          onChange={(e) => {
-            setSelectedMatchId(e.target.value);
-            setResultStandings(null);
-            setAiInsight(null);
-          }}
-          className="w-full bg-surface-2 border border-edge/12 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-brand transition-colors"
-        >
-          <option value="">{t("simulator.selectMatch")}…</option>
-          {scheduledMatches?.map((m) => {
-            const home = teamsMap.get(m.homeTeamId);
-            const away = teamsMap.get(m.awayTeamId);
-            return (
-              <option key={m.id} value={m.id}>
-                {home?.shortName ?? "?"} vs {away?.shortName ?? "?"} —{" "}
-                {formatMatchDay(m.kickoffAt)} {formatKickoff(m.kickoffAt)}
-              </option>
-            );
-          })}
-        </select>
+        {activeTab === "my-team" && !favoriteTeamId ? (
+          <div className="p-4 bg-surface-2 rounded-xl text-center space-y-2">
+            <p className="text-xs text-muted">
+              You haven't selected a favorite team yet.
+            </p>
+          </div>
+        ) : (
+          <select
+            value={selectedMatchId}
+            onChange={(e) => {
+              setSelectedMatchId(e.target.value);
+              setResultStandings(null);
+              setAiInsight(null);
+            }}
+            className="w-full bg-surface-2 border border-edge/12 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-brand transition-colors"
+          >
+            <option value="">{t("simulator.selectMatch")}…</option>
+            {activeMatchesList?.map((m) => {
+              const home = teamsMap.get(m.homeTeamId);
+              const away = teamsMap.get(m.awayTeamId);
+              return (
+                <option key={m.id} value={m.id}>
+                  {home?.name || home?.shortName || "?"} vs{" "}
+                  {away?.name || away?.shortName || "?"} —{" "}
+                  {formatMatchDay(m.kickoffAt)} {formatKickoff(m.kickoffAt)}
+                </option>
+              );
+            })}
+          </select>
+        )}
 
         {/* Selected match preview */}
         {selectedMatch && (
@@ -129,7 +233,7 @@ export default function Simulator() {
                 <input
                   type="number"
                   min={0}
-                  max={20}
+                  max={50}
                   value={homeScore}
                   onChange={(e) => setHomeScore(Number(e.target.value))}
                   className="w-16 text-center text-xl font-black bg-surface border border-edge/12 rounded-lg py-1 text-foreground focus:outline-none focus:border-brand transition-colors"
@@ -153,34 +257,13 @@ export default function Simulator() {
                 <input
                   type="number"
                   min={0}
-                  max={20}
+                  max={50}
                   value={awayScore}
                   onChange={(e) => setAwayScore(Number(e.target.value))}
                   className="w-16 text-center text-xl font-black bg-surface border border-edge/12 rounded-lg py-1 text-foreground focus:outline-none focus:border-brand transition-colors"
                 />
               </div>
             </div>
-
-            {/* AI Tactical Engine Card / Insights */}
-            {aiInsight && (
-              <div className="bg-surface-2 border border-brand/20 rounded-xl p-4 space-y-2 font-mono text-xs">
-                <div className="flex items-center justify-between border-b border-edge/10 pb-2">
-                  <span className="font-black text-brand uppercase tracking-wider flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                    AI Tactical Engine v2.6
-                  </span>
-                  <span className="text-[10px] bg-brand/10 text-brand px-2 py-0.5 uppercase border border-brand/20 rounded">
-                    Analyzed
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-muted">Simulated Match ID:</span>
-                  <span className="text-foreground">
-                    {aiInsight.matchId || selectedMatchId}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -201,12 +284,6 @@ export default function Simulator() {
             ? t("simulator.loading")
             : t("simulator.simulate")}
         </Button>
-
-        {simulate.isError && (
-          <p className="text-sm text-red-400 text-center">
-            {t("errors.generic")}
-          </p>
-        )}
       </div>
 
       {/* Projected standings */}
@@ -233,9 +310,11 @@ export default function Simulator() {
         ) : (
           <div className="space-y-3">
             {simulations.map((sim: any) => {
-              const m = scheduledMatches?.find((x) => x.id === sim.matchId);
+              // Now we find the match using 'allMatches' instead of just 'scheduledMatches'
+              const m = allMatches?.find((x: any) => x.id === sim.matchId);
               const home = m ? teamsMap.get(m.homeTeamId) : undefined;
               const away = m ? teamsMap.get(m.awayTeamId) : undefined;
+
               return (
                 <div
                   key={sim.id}
@@ -250,11 +329,13 @@ export default function Simulator() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="text-sm font-semibold text-foreground truncate">
-                      {home?.shortName ?? "?"} vs {away?.shortName ?? "?"}
+                      {home?.shortName || home?.name || "?"} vs{" "}
+                      {away?.shortName || away?.name || "?"}
                     </span>
                   </div>
                   <div className="text-xl font-black text-foreground flex-shrink-0">
-                    {sim.simulatedHomeScore} – {sim.simulatedAwayScore}
+                    {sim.simulatedHomeScore ?? 0} –{" "}
+                    {sim.simulatedAwayScore ?? 0}
                   </div>
                 </div>
               );
