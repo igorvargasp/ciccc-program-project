@@ -40,6 +40,17 @@ const envSchema = z.object({
     .default("true"),
   // Cron for the once-a-day full refresh + cross-league digest.
   DAILY_DIGEST_CRON: z.string().default("0 6 * * *"),
+
+  // TheSportsDB — the source for player photos, which football-data.org does
+  // not provide. "3" is their public test key and works out of the box; get
+  // your own from https://www.thesportsdb.com/ before relying on it.
+  THESPORTSDB_API_KEY: z.string().default("3"),
+  // How many photo-less players each backfill tick may look up. The job is
+  // resumable, so a big squad table fills in over several runs.
+  PLAYER_PHOTO_BATCH_SIZE: z.coerce.number().int().positive().default(150),
+  // Cron for the player-photo backfill. Photos change rarely, so this is slow
+  // by design — it mainly exists to pick up newly synced squad members.
+  PLAYER_PHOTO_CRON: z.string().default("30 4 * * *"),
 });
 
 const parsed = envSchema.safeParse(process.env);

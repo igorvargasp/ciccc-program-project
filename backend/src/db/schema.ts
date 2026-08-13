@@ -96,6 +96,10 @@ export const players = pgTable("players", {
   dateOfBirth: date("date_of_birth"),
   marketValue: numeric("market_value", { precision: 14, scale: 2 }),
   photoUrl: text("photo_url"),
+  // When we last asked TheSportsDB for this player's photo. Set even when the
+  // lookup finds nothing, so the backfill doesn't retry permanent misses on
+  // every run and starve players it hasn't tried yet.
+  photoCheckedAt: timestamp("photo_checked_at", { withTimezone: true }),
 });
 
 export const competitions = pgTable("competitions", {

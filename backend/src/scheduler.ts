@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { env } from "./config/env.js";
 import { buildDailyDigest } from "./services/digest.js";
 import { footballDataEnabled, trackedCompetitions } from "./services/football-data.js";
+import { syncPlayerPhotos } from "./services/player-photos.js";
 import { pollLiveMatches, syncAll, syncFixtures } from "./services/sync.js";
 
 /**
@@ -39,6 +40,17 @@ export function startScheduler(): void {
   cron.schedule(env.DAILY_DIGEST_CRON, run("daily", async () => {
     await syncAll();
     await buildDailyDigest();
+  }));
+
+  // Player photos from TheSportsDB, in bounded batches. Runs after the daily
+  // sync so newly added squad members get picked up on the next tick.
+  cron.schedule(env.PLAYER_PHOTO_CRON, run("photos", async () => {
+    const r = await syncPlayerPhotos();
+    if (r.scanned) {
+      console.log(
+        `[photos] scanned ${r.scanned} — matched ${r.matched}, missed ${r.missed}, failed ${r.failed}`,
+      );
+    }
   }));
 
   console.log(
