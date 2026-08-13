@@ -17,7 +17,10 @@ const limit = Number(process.argv[2]) || 200;
 console.log(`Looking up photos for up to ${limit} players…\n`);
 const r = await backfillPlayerPhotos(limit);
 
-console.log(`\nscanned ${r.scanned}\n  matched ${r.matched}\n  missed  ${r.missed}`);
+console.log(
+  `\nscanned ${r.scanned}\n  matched  ${r.matched}\n  missed   ${r.missed}` +
+    (r.deferred ? `\n  deferred ${r.deferred} (not reached — will retry)` : ""),
+);
 for (const [source, n] of Object.entries(r.bySource)) {
   console.log(`    ${source.padEnd(12)} ${n}`);
 }
