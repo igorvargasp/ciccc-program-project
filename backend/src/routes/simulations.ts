@@ -19,8 +19,8 @@ const createSchema = z.object({
 simulationsRouter.post(
   "/",
   asyncHandler(async (req, res) => {
-    // Se não houver req.user, userId fica como null
-    const userId = req.user?.id || null;
+    // Se não houver req.auth, userId fica como null
+    const userId = req.auth?.id || null;
     const { matchId, homeScore, awayScore } = createSchema.parse(req.body);
 
     const result = await simulateMatch({
@@ -38,7 +38,7 @@ simulationsRouter.post(
 simulationsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const userId = req.user?.id;
+    const userId = req.auth?.id;
 
     let query;
 
