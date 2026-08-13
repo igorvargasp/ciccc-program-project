@@ -10,6 +10,7 @@ import {
   Settings,
   Swords,
   Shield,
+  Star,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/utils";
@@ -24,6 +25,7 @@ const mainNav = [
   { to: "/lineup", icon: Shield, label: "Lineup" },
   { to: "/news", icon: Newspaper, label: "nav.news" },
   { to: "/simulator", icon: Swords, label: "nav.simulator" },
+  { to: "/my-team", icon: Star, label: "My Team" },
 ];
 
 const bottomNav = [
@@ -31,17 +33,7 @@ const bottomNav = [
   { to: "/profile", icon: Settings, label: "nav.profile" },
 ];
 
-function NavLink({
-  to,
-  icon: Icon,
-  label,
-  exact,
-}: {
-  to: string;
-  icon: React.ElementType;
-  label: string;
-  exact?: boolean;
-}) {
+function NavLink({ to, icon: Icon, label, exact }: any) {
   const { pathname } = useLocation();
   const { t } = useTranslation();
   const active = exact ? pathname === to : pathname.startsWith(to);
@@ -57,7 +49,7 @@ function NavLink({
       )}
     >
       <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-      <span>{t(label)}</span>
+      <span>{t(label, label)}</span>
     </Link>
   );
 }
@@ -65,20 +57,23 @@ function NavLink({
 export default function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 w-44 hidden lg:flex flex-col bg-surface border-r border-edge/12 z-40">
-      {/* Brand */}
       <div className="flex items-center gap-2.5 px-4 h-16 border-b border-edge/12 flex-shrink-0">
-        <img src={AliScoreLogo} alt="AliScore" className="h-8 w-auto flex-shrink-0" />
-        <span className="text-sm font-black text-foreground tracking-tight">AliScore</span>
+        <img
+          src={AliScoreLogo}
+          alt="AliScore"
+          className="h-8 w-auto flex-shrink-0"
+        />
+        <span className="text-sm font-black text-foreground tracking-tight">
+          AliScore
+        </span>
       </div>
 
-      {/* Main nav */}
       <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-0.5">
         {mainNav.map((item) => (
           <NavLink key={item.to} {...item} />
         ))}
       </nav>
 
-      {/* Bottom nav */}
       <div className="border-t border-edge/12 py-3 px-2 space-y-0.5 flex-shrink-0">
         {bottomNav.map((item) => (
           <NavLink key={item.to} {...item} />

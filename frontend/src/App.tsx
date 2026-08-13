@@ -44,6 +44,9 @@ import { TermsPage } from "./pages/TermsPage";
 // LINEUP PAGE:
 import { LineupPage } from "./pages/LineupPage";
 
+// MY TEAM PAGE:
+import MyTeamPage from "./pages/MyTeamPage";
+
 /** Syncs the `dark` class on <html> whenever theme changes. */
 function ThemeSync() {
   const { theme } = useAppStore();
@@ -115,6 +118,7 @@ export default function App() {
           <Route path="home" element={<Home />} />
           <Route path="matches" element={<Matches />} />
           <Route path="matches/:id" element={<MatchDetail />} />
+          <Route path="/my-team" element={<MyTeamPage />} />
           <Route path="competitions" element={<Competitions />} />
           <Route path="competitions/:id" element={<CompetitionDetail />} />
           <Route path="teams" element={<Teams />} />
