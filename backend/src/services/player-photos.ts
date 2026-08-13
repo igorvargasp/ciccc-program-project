@@ -2,19 +2,32 @@ import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { players, teams } from "../db/schema.js";
 import { env } from "../config/env.js";
-import { searchPlayers, type TsdbPlayer } from "./thesportsdb.js";
+import {
+  lookupAllPlayers,
+  searchPlayers,
+  searchTeam,
+  type TsdbPlayer,
+} from "./thesportsdb.js";
+import { fetchPhotos, findEntityId } from "./wikidata.js";
 
 /**
- * Backfills `players.photo_url` from TheSportsDB.
+ * Backfills `players.photo_url`.
  *
  * football-data.org is our system of record for squads but exposes no player
- * imagery at all, so photos have to come from a second source. There is no
- * shared identifier between the two, which leaves name matching — hence the
- * normalisation and the deliberately conservative candidate rules below.
+ * imagery at all, so photos come from elsewhere. There is no shared identifier
+ * between the sources, which leaves name matching — hence the normalisation and
+ * the deliberately conservative candidate rules below.
  *
- * The job is budgeted (PLAYER_PHOTO_BATCH_SIZE) and resumable: it only looks at
- * players that still have no photo and haven't been checked recently, so a
- * large squad table fills in over several runs instead of one huge burst.
+ * Sources run in order of cost, cheapest first, and each only sees the players
+ * the previous one couldn't place:
+ *
+ *   1. Wikidata/Commons — no request quota, freely licensed, lower coverage.
+ *   2. TheSportsDB squad listings — one request per team, sparse rosters.
+ *   3. TheSportsDB player search — one request per player, best coverage, and
+ *      the only source with a hard quota, so it goes last and sees the least.
+ *
+ * The job is budgeted (PLAYER_PHOTO_BATCH_SIZE) and resumable: it only
+ * considers players that still have no photo and haven't been checked recently.
  */
 
 /** Retry a player that produced no photo only after this long. */
@@ -59,7 +72,7 @@ function imageOf(p: TsdbPlayer): string | null {
 }
 
 /**
- * Choose which search result to trust.
+ * Choose which TheSportsDB result to trust.
  *
  * A club mismatch does NOT imply the wrong person — TheSportsDB's club data
  * lags transfers (Christian Nørgaard still reads "Everton" while football-data
@@ -91,23 +104,134 @@ export function pickCandidate(
   return exact.length === 1 ? exact[0] : null;
 }
 
+// ─────────────────────────── Source chain ───────────────────────────
+
+interface Candidate {
+  id: string;
+  fullName: string;
+  teamName: string | null;
+}
+
+export type PhotoSource = "wikidata" | "thesportsdb";
+
+interface Found {
+  url: string;
+  source: PhotoSource;
+}
+
+type SourceFn = (players: Candidate[]) => Promise<Map<string, Found>>;
+
+const isRateLimited = (err: unknown) =>
+  err instanceof Error && err.message.includes("429");
+
+/** Tier 1 — Wikidata/Commons. No quota, so it gets first pass at everything. */
+const fromWikidata: SourceFn = async (candidates) => {
+  const found = new Map<string, Found>();
+
+  // Resolve names to entity ids first, then batch the claim lookups (50 per
+  // request) rather than paying a round trip per player.
+  const byEntity = new Map<string, Candidate>();
+  for (const c of candidates) {
+    try {
+      const id = await findEntityId(c.fullName);
+      // First writer wins: if two players resolve to the same entity, neither
+      // is trustworthy, so drop the later one rather than guess.
+      if (id && !byEntity.has(id)) byEntity.set(id, c);
+    } catch (err) {
+      console.error(`[photos] wikidata search "${c.fullName}":`, err);
+    }
+  }
+
+  if (byEntity.size === 0) return found;
+
+  const photos = await fetchPhotos([...byEntity.keys()]);
+  for (const [entityId, photo] of photos) {
+    const c = byEntity.get(entityId);
+    if (c) found.set(c.id, { url: photo.url, source: "wikidata" });
+  }
+  return found;
+};
+
+/** Tier 2 — TheSportsDB squad listings: one request per club, not per player. */
+const fromTsdbSquads: SourceFn = async (candidates) => {
+  const found = new Map<string, Found>();
+
+  const byTeam = new Map<string, Candidate[]>();
+  for (const c of candidates) {
+    if (!c.teamName) continue;
+    const list = byTeam.get(c.teamName) ?? [];
+    list.push(c);
+    byTeam.set(c.teamName, list);
+  }
+
+  for (const [teamName, members] of byTeam) {
+    try {
+      const team = await searchTeam(normalizeTeamName(teamName));
+      if (!team) continue;
+      const squad = await lookupAllPlayers(team.idTeam);
+      if (!squad.length) continue;
+
+      const index = new Map(squad.map((p) => [normalizeName(p.strPlayer), p]));
+      for (const c of members) {
+        const hit = index.get(normalizeName(c.fullName));
+        const url = hit ? imageOf(hit) : null;
+        if (url) found.set(c.id, { url, source: "thesportsdb" });
+      }
+    } catch (err) {
+      console.error(`[photos] tsdb squad "${teamName}":`, err instanceof Error ? err.message : err);
+      if (isRateLimited(err)) {
+        console.warn("[photos] tsdb rate limited — skipping remaining squads");
+        break;
+      }
+    }
+  }
+  return found;
+};
+
+/** Tier 3 — TheSportsDB per-player search. Best coverage, hard quota, so last. */
+const fromTsdbSearch: SourceFn = async (candidates) => {
+  const found = new Map<string, Found>();
+
+  for (const c of candidates) {
+    try {
+      const hit = pickCandidate(await searchPlayers(c.fullName), c.teamName, c.fullName);
+      const url = hit ? imageOf(hit) : null;
+      if (url) found.set(c.id, { url, source: "thesportsdb" });
+    } catch (err) {
+      console.error(`[photos] tsdb search "${c.fullName}":`, err instanceof Error ? err.message : err);
+      // Being rate-limited won't fix itself mid-run; stop and resume next tick.
+      if (isRateLimited(err)) {
+        console.warn("[photos] tsdb rate limited — stopping this source early");
+        break;
+      }
+    }
+  }
+  return found;
+};
+
+const SOURCES: { name: string; run: SourceFn }[] = [
+  { name: "wikidata", run: fromWikidata },
+  { name: "tsdb-squads", run: fromTsdbSquads },
+  { name: "tsdb-search", run: fromTsdbSearch },
+];
+
 export interface PhotoSyncResult {
   scanned: number;
   matched: number;
   missed: number;
-  failed: number;
+  bySource: Record<string, number>;
 }
 
 /**
  * Fetch photos for up to `limit` players that still lack one.
  * Returns counts rather than throwing, so a partial run is still useful.
  */
-export async function syncPlayerPhotos(
+export async function backfillPlayerPhotos(
   limit = env.PLAYER_PHOTO_BATCH_SIZE,
 ): Promise<PhotoSyncResult> {
   const cutoff = new Date(Date.now() - RECHECK_AFTER_DAYS * 86_400_000);
 
-  const rows = await db
+  const candidates: Candidate[] = await db
     .select({
       id: players.id,
       fullName: players.fullName,
@@ -123,35 +247,44 @@ export async function syncPlayerPhotos(
     )
     .limit(limit);
 
-  const result: PhotoSyncResult = { scanned: 0, matched: 0, missed: 0, failed: 0 };
+  const found = new Map<string, Found>();
+  const bySource: Record<string, number> = {};
 
-  for (const row of rows) {
-    result.scanned += 1;
+  for (const source of SOURCES) {
+    const remaining = candidates.filter((c) => !found.has(c.id));
+    if (remaining.length === 0) break;
+
     try {
-      const candidates = await searchPlayers(row.fullName);
-      const hit = pickCandidate(candidates, row.teamName, row.fullName);
-      const photoUrl = hit ? imageOf(hit) : null;
-
-      // Stamp the check either way — an unstamped miss would be re-queried on
-      // every run and permanently crowd out players we haven't tried yet.
-      await db
-        .update(players)
-        .set({ photoUrl: photoUrl ?? undefined, photoCheckedAt: new Date() })
-        .where(eq(players.id, row.id));
-
-      if (photoUrl) result.matched += 1;
-      else result.missed += 1;
+      const hits = await source.run(remaining);
+      for (const [id, hit] of hits) found.set(id, hit);
+      bySource[source.name] = hits.size;
+      console.log(`[photos] ${source.name}: ${hits.size}/${remaining.length}`);
     } catch (err) {
-      result.failed += 1;
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[photos] ${row.fullName} failed:`, msg);
-      // Being rate-limited won't fix itself mid-run; stop and resume next tick.
-      if (msg.includes("429")) {
-        console.warn("[photos] rate limited — stopping this run early");
-        break;
-      }
+      // One source failing shouldn't cost us the others.
+      bySource[source.name] = 0;
+      console.error(`[photos] ${source.name} failed:`, err instanceof Error ? err.message : err);
     }
   }
 
-  return result;
+  // Stamp every candidate, hit or miss — an unstamped miss would be re-queried
+  // on every run and permanently crowd out players we haven't tried yet.
+  const checkedAt = new Date();
+  for (const c of candidates) {
+    const hit = found.get(c.id);
+    await db
+      .update(players)
+      .set({
+        photoUrl: hit?.url ?? undefined,
+        photoSource: hit?.source ?? undefined,
+        photoCheckedAt: checkedAt,
+      })
+      .where(eq(players.id, c.id));
+  }
+
+  return {
+    scanned: candidates.length,
+    matched: found.size,
+    missed: candidates.length - found.size,
+    bySource,
+  };
 }

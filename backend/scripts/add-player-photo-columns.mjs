@@ -7,6 +7,7 @@ import { db } from "../dist/db/index.js";
 
 const statements = [
   `ALTER TABLE "players" ADD COLUMN IF NOT EXISTS "photo_checked_at" timestamp with time zone`,
+  `ALTER TABLE "players" ADD COLUMN IF NOT EXISTS "photo_source" varchar(16)`,
 ];
 
 for (const stmt of statements) {

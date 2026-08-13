@@ -69,3 +69,42 @@ export async function searchPlayers(name: string): Promise<TsdbPlayer[]> {
   );
   return data.player ?? [];
 }
+
+interface TsdbTeam {
+  idTeam: string;
+  strTeam: string;
+  strLeague?: string | null;
+}
+
+interface TsdbTeamSearchResponse {
+  teams: TsdbTeam[] | null;
+}
+
+/**
+ * Resolve a club name to a TheSportsDB team id.
+ *
+ * Pass a name with its decorations already stripped: searching "Arsenal FC"
+ * verbatim returns a Romanian third-division club, while "Arsenal" returns the
+ * Premier League side.
+ */
+export async function searchTeam(name: string): Promise<TsdbTeam | null> {
+  const data = await request<TsdbTeamSearchResponse>(
+    `/searchteams.php?t=${encodeURIComponent(name)}`,
+  );
+  return data.teams?.[0] ?? null;
+}
+
+/**
+ * Every player TheSportsDB lists for a team — one request for the whole squad.
+ *
+ * Rosters are incomplete (10 of Arsenal's 30 at time of writing), so this
+ * won't finish the job on its own. It is still worth running first: against a
+ * cumulative request quota, ten photos for one request beats ten photos for
+ * ten requests via searchPlayers.
+ */
+export async function lookupAllPlayers(teamId: string): Promise<TsdbPlayer[]> {
+  const data = await request<TsdbPlayerSearchResponse>(
+    `/lookup_all_players.php?id=${encodeURIComponent(teamId)}`,
+  );
+  return data.player ?? [];
+}

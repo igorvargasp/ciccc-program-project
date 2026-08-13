@@ -1,22 +1,26 @@
 /**
- * Backfill player photos from TheSportsDB on demand.
+ * Backfill player photos on demand.
  * Run with:  npx tsx scripts/sync-player-photos.ts [limit]
  *
+ * Sources run cheapest-first — Wikidata (no quota), then TheSportsDB squad
+ * listings (one request per club), then TheSportsDB player search (one request
+ * per player, and the only source with a hard quota).
+ *
  * The scheduler runs this nightly in small batches; this script exists for the
- * first fill, where you want to work through the table faster than one batch a
- * day. It's resumable — re-run it until `scanned` comes back 0.
+ * first fill. It's resumable — re-run until `scanned` comes back 0.
  */
 import "dotenv/config";
-import { syncPlayerPhotos } from "../src/services/player-photos.js";
+import { backfillPlayerPhotos } from "../src/services/player-photos.js";
 
 const limit = Number(process.argv[2]) || 200;
 
-console.log(`Looking up photos for up to ${limit} players…`);
-const r = await syncPlayerPhotos(limit);
+console.log(`Looking up photos for up to ${limit} players…\n`);
+const r = await backfillPlayerPhotos(limit);
 
-console.log(
-  `\nscanned ${r.scanned}\n  matched ${r.matched}\n  missed  ${r.missed}\n  failed  ${r.failed}`,
-);
+console.log(`\nscanned ${r.scanned}\n  matched ${r.matched}\n  missed  ${r.missed}`);
+for (const [source, n] of Object.entries(r.bySource)) {
+  console.log(`    ${source.padEnd(12)} ${n}`);
+}
 if (r.scanned === limit) {
   console.log("\nHit the batch limit — run again to continue.");
 } else if (r.scanned === 0) {
