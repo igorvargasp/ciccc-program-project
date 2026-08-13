@@ -1,4 +1,4 @@
-import { and, eq, isNull, lt, or } from "drizzle-orm";
+import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { players, teams } from "../db/schema.js";
 import { env } from "../config/env.js";
@@ -110,6 +110,8 @@ interface Candidate {
   id: string;
   fullName: string;
   teamName: string | null;
+  /** Sources that have already searched for this player and found nothing. */
+  tried: string[];
 }
 
 export type PhotoSource = "wikidata" | "thesportsdb";
@@ -259,11 +261,12 @@ export async function backfillPlayerPhotos(
 ): Promise<PhotoSyncResult> {
   const cutoff = new Date(Date.now() - RECHECK_AFTER_DAYS * 86_400_000);
 
-  const candidates: Candidate[] = await db
+  const rows = await db
     .select({
       id: players.id,
       fullName: players.fullName,
       teamName: teams.name,
+      tried: players.photoSourcesTried,
     })
     .from(players)
     .leftJoin(teams, eq(players.teamId, teams.id))
@@ -273,21 +276,41 @@ export async function backfillPlayerPhotos(
         or(isNull(players.photoCheckedAt), lt(players.photoCheckedAt, cutoff)),
       ),
     )
+    // Least-tried players first, so a provider that is up doesn't spend every
+    // run on the same head of the table while the tail is never looked at.
+    // Ordering is otherwise unspecified, which made repeats likely.
+    .orderBy(
+      sql`coalesce(array_length(${players.photoSourcesTried}, 1), 0) asc`,
+      asc(players.id),
+    )
     .limit(limit);
+
+  const candidates: Candidate[] = rows.map((r) => ({ ...r, tried: r.tried ?? [] }));
 
   const found = new Map<string, Found>();
   const bySource: Record<string, number> = {};
-  // A player counts as checked only once every source has had its turn.
-  const exhausted = new Map<string, number>();
+  // Sources that searched for each player this run, merged with what earlier
+  // runs already recorded.
+  const tried = new Map<string, Set<string>>(
+    candidates.map((c) => [c.id, new Set(c.tried)]),
+  );
 
   for (const source of SOURCES) {
-    const remaining = candidates.filter((c) => !found.has(c.id));
-    if (remaining.length === 0) break;
+    // Skip anyone already placed, or whom this source searched on a past run —
+    // re-asking Wikidata for a name it has already failed to resolve is pure
+    // waste, and it is deterministic, so the answer would not change.
+    const remaining = candidates.filter(
+      (c) => !found.has(c.id) && !tried.get(c.id)?.has(source.name),
+    );
+    if (remaining.length === 0) {
+      bySource[source.name] = 0;
+      continue;
+    }
 
     try {
       const { found: hits, attempted } = await source.run(remaining);
       for (const [id, hit] of hits) found.set(id, hit);
-      for (const id of attempted) exhausted.set(id, (exhausted.get(id) ?? 0) + 1);
+      for (const id of attempted) tried.get(id)?.add(source.name);
       bySource[source.name] = hits.size;
       console.log(
         `[photos] ${source.name}: ${hits.size}/${remaining.length}` +
@@ -297,7 +320,7 @@ export async function backfillPlayerPhotos(
       );
     } catch (err) {
       // One source failing shouldn't cost us the others, and nothing it never
-      // reached should be recorded as checked.
+      // reached should be recorded as tried.
       bySource[source.name] = 0;
       console.error(`[photos] ${source.name} failed:`, err instanceof Error ? err.message : err);
     }
@@ -308,12 +331,22 @@ export async function backfillPlayerPhotos(
 
   for (const c of candidates) {
     const hit = found.get(c.id);
-    // Stamp a hit, or a miss that every source genuinely looked for. A player
-    // a source never reached stays unstamped so the next run picks it up
+    const triedNow = [...(tried.get(c.id) ?? [])];
+    // Only call it checked once every source has genuinely looked. A player
+    // skipped behind a rate limit stays unstamped so the next run picks it up
     // instead of hiding it for RECHECK_AFTER_DAYS.
-    const fullyChecked = (exhausted.get(c.id) ?? 0) === SOURCES.length;
+    const fullyChecked = triedNow.length === SOURCES.length;
+
     if (!hit && !fullyChecked) {
       deferred += 1;
+      // Still record which sources ran, so the next attempt resumes from here
+      // rather than repeating work that already came back empty.
+      if (triedNow.length > c.tried.length) {
+        await db
+          .update(players)
+          .set({ photoSourcesTried: triedNow })
+          .where(eq(players.id, c.id));
+      }
       continue;
     }
 
@@ -322,12 +355,15 @@ export async function backfillPlayerPhotos(
       .set({
         photoUrl: hit?.url ?? undefined,
         photoSource: hit?.source ?? undefined,
+        photoSourcesTried: triedNow,
         photoCheckedAt: checkedAt,
       })
       .where(eq(players.id, c.id));
   }
 
-  if (deferred) console.log(`[photos] ${deferred} deferred to a later run`);
+  if (deferred) {
+    console.log(`[photos] ${deferred} deferred — partial progress saved`);
+  }
 
   return {
     scanned: candidates.length,

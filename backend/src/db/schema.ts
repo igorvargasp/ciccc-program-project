@@ -108,9 +108,13 @@ export const players = pgTable("players", {
   // "thesportsdb". Worth recording: the two differ in licensing, so you need to
   // know which images are safe to reuse.
   photoSource: varchar("photo_source", { length: 16 }),
-  // When we last looked for this player's photo, across all sources. Set even
-  // when nothing is found, so the backfill doesn't retry permanent misses on
-  // every run and starve players it hasn't tried yet.
+  // Photo sources that have already searched for this player and come back
+  // empty. Recorded per source so a run interrupted by one provider's rate
+  // limit doesn't re-run the providers that already finished.
+  photoSourcesTried: text("photo_sources_tried").array(),
+  // When every source had looked for this player and none found anything. Only
+  // set once the search is genuinely exhausted, so a player skipped behind a
+  // rate limit is retried rather than hidden for RECHECK_AFTER_DAYS.
   photoCheckedAt: timestamp("photo_checked_at", { withTimezone: true }),
 });
 
