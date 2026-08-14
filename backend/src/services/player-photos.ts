@@ -33,6 +33,9 @@ import { fetchPhotos, findEntityId } from "./wikidata.js";
 /** Retry a player that produced no photo only after this long. */
 const RECHECK_AFTER_DAYS = 30;
 
+/** Players per persisted slice — the most work one interruption can cost. */
+const SLICE_SIZE = 100;
+
 const SPECIALS: Record<string, string> = {
   Ø: "O", ø: "o", Ð: "D", ð: "d", Þ: "T", þ: "t",
   Ł: "L", ł: "l", Đ: "D", đ: "d", ß: "ss", Æ: "AE", æ: "ae", Œ: "OE", œ: "oe",
@@ -169,6 +172,14 @@ const fromWikidata: SourceFn = async (candidates) => {
   return { found, attempted };
 };
 
+/**
+ * Squad lookups are shared across slices of a single run: the same club turns
+ * up in many slices, and re-fetching its roster would spend the tightest quota
+ * we have on an answer we already hold. `null` records a club we looked up and
+ * could not resolve, so we don't ask again either.
+ */
+const squadCache = new Map<string, TsdbPlayer[] | null>();
+
 /** Tier 2 — TheSportsDB squad listings: one request per club, not per player. */
 const fromTsdbSquads: SourceFn = async (candidates) => {
   const found = new Map<string, Found>();
@@ -188,11 +199,15 @@ const fromTsdbSquads: SourceFn = async (candidates) => {
 
   for (const [teamName, members] of byTeam) {
     try {
-      const team = await searchTeam(normalizeTeamName(teamName));
+      const key = normalizeTeamName(teamName);
+      let squad = squadCache.get(key);
+      if (squad === undefined) {
+        const team = await searchTeam(key);
+        squad = team ? await lookupAllPlayers(team.idTeam) : null;
+        squadCache.set(key, squad);
+      }
       for (const c of members) attempted.add(c.id);
-      if (!team) continue;
-      const squad = await lookupAllPlayers(team.idTeam);
-      if (!squad.length) continue;
+      if (!squad?.length) continue;
 
       const index = new Map(squad.map((p) => [normalizeName(p.strPlayer), p]));
       for (const c of members) {
@@ -286,6 +301,37 @@ export async function backfillPlayerPhotos(
     .limit(limit);
 
   const candidates: Candidate[] = rows.map((r) => ({ ...r, tried: r.tried ?? [] }));
+
+  // Work in slices, persisting each before starting the next. A large backfill
+  // takes over an hour, and writing only at the very end would put all of it at
+  // the mercy of one interruption. This also makes progress observable in the
+  // database while the run is still going.
+  const totals: PhotoSyncResult = {
+    scanned: 0, matched: 0, missed: 0, deferred: 0, bySource: {},
+  };
+
+  for (let i = 0; i < candidates.length; i += SLICE_SIZE) {
+    const slice = candidates.slice(i, i + SLICE_SIZE);
+    const r = await processSlice(slice);
+
+    totals.scanned += r.scanned;
+    totals.matched += r.matched;
+    totals.missed += r.missed;
+    totals.deferred += r.deferred;
+    for (const [k, v] of Object.entries(r.bySource)) {
+      totals.bySource[k] = (totals.bySource[k] ?? 0) + v;
+    }
+
+    console.log(
+      `[photos] progress ${totals.scanned}/${candidates.length} — ${totals.matched} matched`,
+    );
+  }
+
+  return totals;
+}
+
+/** One slice through the full source chain, persisted before returning. */
+async function processSlice(candidates: Candidate[]): Promise<PhotoSyncResult> {
 
   const found = new Map<string, Found>();
   const bySource: Record<string, number> = {};

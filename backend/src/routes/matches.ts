@@ -13,6 +13,7 @@ const listQuery = z.object({
   seasonId: z.string().uuid().optional(),
   competitionId: z.string().uuid().optional(),
   status: z.enum(["scheduled", "live", "finished"]).optional(),
+  matchday: z.coerce.number().int().min(1).optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
@@ -40,6 +41,7 @@ matchesRouter.get(
       else { res.json({ data: [] }); return; }
     }
     if (q.status) filters.push(eq(matches.status, q.status));
+    if (q.matchday) filters.push(eq(matches.matchday, q.matchday));
     if (q.from) filters.push(gte(matches.kickoffAt, q.from));
     if (q.to) filters.push(lte(matches.kickoffAt, q.to));
 
