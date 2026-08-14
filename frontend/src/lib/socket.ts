@@ -1,7 +1,8 @@
 import { io, type Socket } from 'socket.io-client';
+import { API_ORIGIN } from '../api/client';
 
-const SOCKET_URL =
-  import.meta.env.VITE_API_URL?.replace('/api', '') ?? '';
+// Empty in dev — the Vite proxy forwards /socket.io to the backend.
+const SOCKET_URL = API_ORIGIN;
 
 let _socket: Socket | null = null;
 

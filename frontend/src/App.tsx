@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useAppStore } from "./store/app";
+import { useAuth } from "./context/AuthContext";
 import AppShell from "./components/layout/AppShell";
 
 // AUTH COMPONENTS:
@@ -74,6 +75,33 @@ function ThemeSync() {
   return null;
 }
 
+/** Shown while the Neon Auth session is being restored. */
+function AuthSplash() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <span className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+    </div>
+  );
+}
+
+/** Gates the app shell — no session, no protected routes. */
+function RequireAuth() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <AuthSplash />;
+  if (!user) return <Navigate to="/login" replace />;
+  return <AppShell />;
+}
+
+/** Keeps signed-in users off the login/register screens. */
+function PublicOnly({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return <AuthSplash />;
+  if (user) return <Navigate to="/home" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   const navigate = useNavigate();
 
@@ -85,7 +113,9 @@ export default function App() {
         <Route
           path="/"
           element={
-            <LoginCard onSwitchToRegister={() => navigate("/register")} />
+            <PublicOnly>
+              <LoginCard onSwitchToRegister={() => navigate("/register")} />
+            </PublicOnly>
           }
         />
 
@@ -93,18 +123,22 @@ export default function App() {
         <Route
           path="login"
           element={
-            <LoginCard onSwitchToRegister={() => navigate("/register")} />
+            <PublicOnly>
+              <LoginCard onSwitchToRegister={() => navigate("/register")} />
+            </PublicOnly>
           }
         />
 
         <Route
           path="register"
           element={
-            <RegisterPage
-              onSwitchToLogin={() => navigate("/login")}
-              onOpenTerms={() => navigate("/terms")}
-              onSuccessRegister={() => navigate("/home")}
-            />
+            <PublicOnly>
+              <RegisterPage
+                onSwitchToLogin={() => navigate("/login")}
+                onOpenTerms={() => navigate("/terms")}
+                onSuccessRegister={() => navigate("/home")}
+              />
+            </PublicOnly>
           }
         />
 
@@ -114,7 +148,7 @@ export default function App() {
         />
 
         {/* Rotas Protegidas / Com Layout Padrão */}
-        <Route element={<AppShell />}>
+        <Route element={<RequireAuth />}>
           <Route path="home" element={<Home />} />
           <Route path="matches" element={<Matches />} />
           <Route path="matches/:id" element={<MatchDetail />} />

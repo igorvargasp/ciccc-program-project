@@ -44,7 +44,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
 
     try {
       await login(email, password);
-      navigate("/");
+      navigate("/home");
     } catch (error: unknown) {
       const message =
         error instanceof Error

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { authClient } from "@/auth";
 import { RegisterCardHeader } from "./Register&LoginCardHeader";
 import { useTranslation } from "react-i18next";
-import { SelectFavoriteTeamModal } from "../modals/SelectFavoriteTeamModal";
+import {
+  SelectFavoriteTeamModal,
+  type Team,
+} from "../modals/SelectFavoriteTeamModal";
 import toast, { Toaster } from "react-hot-toast";
 
 interface RegisterPageProps {
@@ -99,7 +101,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   onOpenTerms,
   onSuccessRegister,
 }) => {
-  const { login } = useAuth();
+  const { register, updateFavoriteTeam } = useAuth();
   const { t } = useTranslation();
 
   const appFeatures = getAppFeatures(t);
@@ -235,17 +237,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     try {
       const fullName = `${firstName} ${surname}`.trim();
 
-      const signUpRes = await authClient.signUp.email({
-        email,
-        password,
-        name: fullName,
-      });
-
-      if (signUpRes.error) {
-        throw new Error(signUpRes.error.message || "Sign up failed.");
-      }
-
-      login(email, fullName);
+      await register(email, password, fullName);
       toast.success(t("auth.successRegister", "Account created successfully!"));
 
       // Abre o modal de escolha do time antes de finalizar a navegação para a home
@@ -264,7 +256,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     }
   };
 
-  const handleConfirmTeam = (_team: Team) => {
+  const handleConfirmTeam = (team: Team) => {
+    updateFavoriteTeam(team.id);
     setIsTeamModalOpen(false);
     if (onSuccessRegister) {
       onSuccessRegister();

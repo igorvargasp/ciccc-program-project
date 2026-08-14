@@ -4,6 +4,7 @@ import { Bell, BellOff } from 'lucide-react';
 import { getMe, updatePreferences } from '../api/me';
 import { listFavorites, removeFavorite } from '../api/favorites';
 import { useAppStore } from '../store/app';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import { cn } from '../lib/utils';
 
@@ -18,6 +19,7 @@ const LANGS = [
 export default function Profile() {
   const { t, i18n } = useTranslation();
   const { theme, setTheme, lang, setLang, token } = useAppStore();
+  const { logout } = useAuth();
   const qc = useQueryClient();
 
   const { data: user } = useQuery({
@@ -189,7 +191,9 @@ export default function Profile() {
       {token && (
         <Button
           variant="outline"
-          onClick={() => useAppStore.getState().setToken(null)}
+          onClick={() => {
+            void logout().then(() => qc.clear());
+          }}
           className="w-full"
         >
           <BellOff className="w-4 h-4" />
