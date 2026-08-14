@@ -12,7 +12,32 @@ import StandingsTable from "../components/StandingsTable";
 import Button from "../components/ui/Button";
 import { PageSpinner } from "../components/ui/Spinner";
 import { formatMatchDay, formatKickoff } from "../lib/utils";
-import type { StandingRow } from "../types";
+import type { StandingRow, Team } from "../types";
+
+/**
+ * Simulations stored before the table shape was unified hold flat rows
+ * (`{ teamId, teamName }`); StandingsTable reads `row.team`. Lift those into the
+ * current shape so old history entries still render.
+ */
+function normalizeStandings(
+  rows: unknown,
+  teamsMap: Map<string, Team>,
+): StandingRow[] | null {
+  if (!Array.isArray(rows)) return null;
+  return rows.map((row: any) => {
+    if (row?.team?.id) return row as StandingRow;
+    const team = teamsMap.get(row?.teamId);
+    return {
+      ...row,
+      team: {
+        id: row?.teamId,
+        name: team?.name ?? row?.teamName ?? "Unknown",
+        shortName: team?.shortName ?? null,
+        crestUrl: team?.crestUrl ?? null,
+      },
+    } as StandingRow;
+  });
+}
 
 export default function Simulator() {
   const { t } = useTranslation();
@@ -62,8 +87,9 @@ export default function Simulator() {
     enabled: true,
   });
 
-  const favoriteTeamId =
+  const rawFavoriteTeamId =
     user?.favoriteTeamId || localStorage.getItem("favorite_team_id");
+  const favoriteTeamId = rawFavoriteTeamId ? String(rawFavoriteTeamId) : null;
 
   // My team scheduled matches
   const { data: myTeamMatches } = useQuery({
@@ -85,9 +111,10 @@ export default function Simulator() {
   const simulate = useMutation({
     mutationFn: createSimulation,
     onSuccess: (result) => {
-      const data = result.data || result;
-      setResultStandings((data.resultingStandings as StandingRow[]) ?? null);
-      setAiInsight(data);
+      setResultStandings(
+        normalizeStandings(result?.resultingStandings, teamsMap),
+      );
+      setAiInsight(result);
       qc.invalidateQueries({ queryKey: ["simulations"] });
     },
   });
@@ -320,11 +347,11 @@ export default function Simulator() {
                   key={sim.id}
                   className="bg-surface border border-edge/12 rounded-xl p-4 flex items-center justify-between gap-4 cursor-pointer hover:border-brand/30 transition-colors"
                   onClick={() => {
-                    if (sim.resultingStandings) {
-                      setResultStandings(
-                        sim.resultingStandings as StandingRow[],
-                      );
-                    }
+                    const rows = normalizeStandings(
+                      sim.resultingStandings,
+                      teamsMap,
+                    );
+                    if (rows) setResultStandings(rows);
                   }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
