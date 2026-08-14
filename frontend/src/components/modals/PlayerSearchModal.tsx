@@ -1,16 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 
-interface Player {
-  id: string | number;
-  fullName: string;
-  photoUrl?: string | null;
-  position: string;
-  // Informações adicionais integradas da nova API / backend
-  nationality?: string | null;
-  teamName?: string | null;
-  photoSource?: string | null;
-}
+import type { LineupSlotPlayer as Player } from "@/types";
 
 interface PlayerSearchModalProps {
   isOpen: boolean;

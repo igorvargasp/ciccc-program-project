@@ -32,6 +32,25 @@ export interface Team {
   foundedYear?: number;
 }
 
+/** Team summary embedded in other payloads (standings rows, match lists). */
+export interface TeamRef {
+  id: string;
+  name: string;
+  shortName?: string | null;
+  crestUrl?: string | null;
+}
+
+export interface TeamStats {
+  winRate: string;
+  goalsScored: number;
+  cleanSheets: number;
+}
+
+/** GET /teams/:id — the team row plus its stats block. */
+export interface TeamDetail extends Team {
+  stats?: TeamStats;
+}
+
 export type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
 
 export interface Player {
@@ -94,6 +113,18 @@ export interface Match {
   matchday?: number;
 }
 
+/**
+ * A match as it arrives from a listing endpoint. `GET /matches` returns team
+ * ids only; `GET /teams/:id/matches` returns nested team objects instead — so
+ * consumers must handle either side being present.
+ */
+export interface MatchListItem extends Omit<Match, 'homeTeamId' | 'awayTeamId'> {
+  homeTeamId?: string;
+  awayTeamId?: string;
+  homeTeam?: TeamRef;
+  awayTeam?: TeamRef;
+}
+
 export type MatchEventType = 'goal' | 'assist' | 'yellow' | 'red' | 'sub';
 
 export interface MatchEvent {
@@ -103,6 +134,12 @@ export interface MatchEvent {
   type: MatchEventType;
   minute?: number;
   detail?: string;
+}
+
+/** GET /matches/:id — the match row plus its competition and event timeline. */
+export interface MatchDetail extends Match {
+  competition?: Pick<Competition, 'id' | 'name' | 'logoUrl'> | null;
+  events: MatchEvent[];
 }
 
 // ─────────────────────────── Statistics ───────────────────────────
@@ -205,6 +242,20 @@ export interface LineupPlayer {
   playerId: string;
   formationSlotId?: string;
   isCaptain: boolean;
+}
+
+/**
+ * Player shape the lineup builder passes around (search modal → pitch slot).
+ * Mirrors the fields `GET /players` returns, not the full `Player` record.
+ */
+export interface LineupSlotPlayer {
+  id: string | number;
+  fullName: string;
+  photoUrl?: string | null;
+  position: string;
+  nationality?: string | null;
+  teamName?: string | null;
+  photoSource?: string | null;
 }
 
 // ─────────────────────────── API response wrappers ───────────────────────────

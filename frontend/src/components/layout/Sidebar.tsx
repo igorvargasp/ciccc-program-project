@@ -11,6 +11,7 @@ import {
   Swords,
   Shield,
   Star,
+  type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/utils";
@@ -33,7 +34,14 @@ const bottomNav = [
   { to: "/profile", icon: Settings, label: "nav.profile" },
 ];
 
-function NavLink({ to, icon: Icon, label, exact }: any) {
+interface NavLinkProps {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  exact?: boolean;
+}
+
+function NavLink({ to, icon: Icon, label, exact }: NavLinkProps) {
   const { pathname } = useLocation();
   const { t } = useTranslation();
   const active = exact ? pathname === to : pathname.startsWith(to);

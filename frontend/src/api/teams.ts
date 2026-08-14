@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Team, Player, TeamStandingsItem } from '../types';
+import type { Team, TeamDetail, Player, TeamStandingsItem } from '../types';
 
 export interface ListTeamsParams {
   search?: string;
@@ -13,8 +13,8 @@ export async function listTeams(params?: ListTeamsParams): Promise<Team[]> {
   return data.data;
 }
 
-export async function getTeam(id: string): Promise<Team> {
-  const { data } = await apiClient.get<{ data: Team }>(`/teams/${id}`);
+export async function getTeam(id: string): Promise<TeamDetail> {
+  const { data } = await apiClient.get<{ data: TeamDetail }>(`/teams/${id}`);
   return data.data;
 }
 

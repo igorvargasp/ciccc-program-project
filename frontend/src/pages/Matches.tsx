@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { listMatches } from "@/api/matches";
+import { listCompetitions } from "@/api/competitions";
 import MatchCard from "@/components/MatchCard";
 import CompetitionPills from "@/components/CompetitionPills";
 import { SkeletonCard } from "@/components/ui/Skeleton";
@@ -74,7 +75,7 @@ export default function Matches() {
 
   const selectedTeamId = favoriteTeam?.id || user?.favoriteTeamId;
 
-  const teamObj = selectedTeamId ? teamsMap.get(selectedTeamId) : null;
+  const teamObj = selectedTeamId ? teamsMap.get(String(selectedTeamId)) : null;
   const teamCompetitionId = String(
     favoriteTeam?.competitionId ||
       (teamObj as any)?.competitionId ||
@@ -125,13 +126,16 @@ export default function Matches() {
   });
 
   // Busca o nome e o emblema/bandeira da liga selecionada direto da query de competições
-  const { data: competitionsData } = useQuery({ queryKey: ["competitions"] });
+  const { data: competitionsData } = useQuery({
+    queryKey: ["competitions"],
+    queryFn: listCompetitions,
+    staleTime: 10 * 60_000,
+  });
   const selectedCompObj = competitionsData?.find(
-    (c: any) => String(c.id) === String(competitionId),
+    (c) => String(c.id) === String(competitionId),
   );
   const activeCompetitionName = selectedCompObj?.name;
-  const competitionFlag =
-    selectedCompObj?.emblem || selectedCompObj?.area?.flag;
+  const competitionFlag = selectedCompObj?.logoUrl;
 
   useEffect(() => {
     setMatchday(undefined);

@@ -2,6 +2,8 @@
 
 import React from "react";
 
+import type { LineupSlotPlayer as Player } from "@/types";
+
 const FORMATIONS: Record<string, { role: string; x: number; y: number }[]> = {
   "4-3-3": [
     { role: "GK", x: 50, y: 88 },
@@ -43,13 +45,6 @@ const FORMATIONS: Record<string, { role: string; x: number; y: number }[]> = {
     { role: "ST", x: 62, y: 22 },
   ],
 };
-
-interface Player {
-  id: string | number;
-  fullName: string; // Atualizado para corresponder ao seu banco de dados
-  photoUrl?: string | null; // Atualizado aqui
-  position: string;
-}
 
 interface FootballPitchProps {
   formation: string;

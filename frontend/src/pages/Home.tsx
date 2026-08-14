@@ -16,8 +16,24 @@ import {
   SelectFavoriteTeamModal,
   Team,
 } from "@/components/modals/SelectFavoriteTeamModal";
+// `Team` above is the modal's own shape; `TeamType` is the API team record.
+import type { MatchListItem, TeamRef, Team as TeamType } from "../types";
 
 const UPCOMING_PAGE_SIZE = 6;
+
+/**
+ * Listing endpoints disagree on shape: `/teams/:id/matches` embeds the teams,
+ * `/matches` only carries their ids. Prefer the embedded object, fall back to
+ * the teams cache.
+ */
+function resolveTeam(
+  embedded: TeamRef | undefined,
+  teamId: string | undefined,
+  teamsMap: Map<string, TeamType>,
+): TeamRef | undefined {
+  if (embedded) return embedded;
+  return teamId ? teamsMap.get(teamId) : undefined;
+}
 
 interface HeroSectionProps {
   onOpenTeamModal: () => void;
@@ -143,7 +159,8 @@ export default function Home() {
 
   const { data: liveMatches, isLoading: loadingLive } = useQuery({
     queryKey: ["matches", { status: "live" }],
-    queryFn: () => listMatches({ status: "live", limit: 6 }),
+    queryFn: (): Promise<MatchListItem[]> =>
+      listMatches({ status: "live", limit: 6 }),
     refetchInterval: 30_000,
   });
 
@@ -152,7 +169,7 @@ export default function Home() {
   // Busca as partidas agendadas estritamente do time favorito
   const { data: upcomingMatches, isLoading: loadingUpcoming } = useQuery({
     queryKey: ["upcoming-matches", { teamId, competitionId }],
-    queryFn: async () => {
+    queryFn: async (): Promise<MatchListItem[]> => {
       // With a favourite club picked, show that club's fixtures; otherwise fall
       // back to the full scheduled list filtered by competition.
       if (!teamId) {
@@ -202,18 +219,8 @@ export default function Home() {
                   <SkeletonCard key={i} />
                 ))
               : liveMatches?.map((m) => {
-                  const homeTeamObj =
-                    typeof m.homeTeam === "object"
-                      ? m.homeTeam
-                      : teamsMap.get(m.homeTeamId) ||
-                        teamsMap.get(String(m.homeTeamId)) ||
-                        teamsMap.get(Number(m.homeTeamId));
-                  const awayTeamObj =
-                    typeof m.awayTeam === "object"
-                      ? m.awayTeam
-                      : teamsMap.get(m.awayTeamId) ||
-                        teamsMap.get(String(m.awayTeamId)) ||
-                        teamsMap.get(Number(m.awayTeamId));
+                  const homeTeamObj = resolveTeam(m.homeTeam, m.homeTeamId, teamsMap);
+                  const awayTeamObj = resolveTeam(m.awayTeam, m.awayTeamId, teamsMap);
 
                   return (
                     <MatchCard
@@ -285,18 +292,8 @@ export default function Home() {
               ? upcomingMatches
               : upcomingMatches.slice(0, UPCOMING_PAGE_SIZE)
             ).map((m) => {
-              const homeTeamObj =
-                typeof m.homeTeam === "object"
-                  ? m.homeTeam
-                  : teamsMap.get(m.homeTeamId) ||
-                    teamsMap.get(String(m.homeTeamId)) ||
-                    teamsMap.get(Number(m.homeTeamId));
-              const awayTeamObj =
-                typeof m.awayTeam === "object"
-                  ? m.awayTeam
-                  : teamsMap.get(m.awayTeamId) ||
-                    teamsMap.get(String(m.awayTeamId)) ||
-                    teamsMap.get(Number(m.awayTeamId));
+              const homeTeamObj = resolveTeam(m.homeTeam, m.homeTeamId, teamsMap);
+              const awayTeamObj = resolveTeam(m.awayTeam, m.awayTeamId, teamsMap);
 
               return (
                 <MatchCard

@@ -1,13 +1,7 @@
 import { useState, useRef } from "react";
 import FootballPitch from "@/components/modals/FootballPitch";
 import PlayerSearchModal from "@/components/modals/PlayerSearchModal";
-
-interface Player {
-  id: string | number;
-  name: string;
-  photo?: string;
-  position: string;
-}
+import type { LineupSlotPlayer as Player } from "@/types";
 
 export function LineupPage() {
   const [formation, setFormation] = useState<string>("4-3-3");

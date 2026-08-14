@@ -66,7 +66,7 @@ export default function MyTeamPage() {
   }, []);
 
   const selectedTeamId = favoriteTeam?.id || user?.favoriteTeamId;
-  const teamObj = selectedTeamId ? teamsMap.get(selectedTeamId) : null;
+  const teamObj = selectedTeamId ? teamsMap.get(String(selectedTeamId)) : null;
 
   const teamName = favoriteTeam?.name || (teamObj as any)?.name || "My Team";
 

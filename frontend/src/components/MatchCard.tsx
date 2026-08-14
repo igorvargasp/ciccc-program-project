@@ -1,17 +1,17 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { Match, Team } from '../types';
+import type { MatchListItem, TeamRef } from '../types';
 import { cn, formatKickoff, formatMatchDay } from '../lib/utils';
 import Badge from './ui/Badge';
 
 interface MatchCardProps {
-  match: Match;
-  homeTeam?: Team;
-  awayTeam?: Team;
+  match: MatchListItem;
+  homeTeam?: TeamRef;
+  awayTeam?: TeamRef;
   compact?: boolean;
 }
 
-function TeamBlock({ team, score, align }: { team?: Team; score?: number | null; align: 'left' | 'right' }) {
+function TeamBlock({ team, score, align }: { team?: TeamRef; score?: number | null; align: 'left' | 'right' }) {
   return (
     <div className={cn('flex items-center gap-2 flex-1', align === 'right' && 'flex-row-reverse')}>
       {/* Crest */}
