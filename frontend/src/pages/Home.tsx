@@ -16,16 +16,10 @@ import {
   SelectFavoriteTeamModal,
   Team,
 } from "@/components/modals/SelectFavoriteTeamModal";
-// `Team` above is the modal's own shape; `TeamType` is the API team record.
 import type { MatchListItem, TeamRef, Team as TeamType } from "../types";
 
 const UPCOMING_PAGE_SIZE = 6;
 
-/**
- * Listing endpoints disagree on shape: `/teams/:id/matches` embeds the teams,
- * `/matches` only carries their ids. Prefer the embedded object, fall back to
- * the teams cache.
- */
 function resolveTeam(
   embedded: TeamRef | undefined,
   teamId: string | undefined,
@@ -61,9 +55,9 @@ function HeroSection({ onOpenTeamModal, selectedTeam }: HeroSectionProps) {
           {selectedTeam ? (
             <div className="space-y-3">
               <div className="flex items-center gap-4">
-                {selectedTeam.badgeUrl ? (
+                {selectedTeam.badgeUrl || selectedTeam.crestUrl ? (
                   <img
-                    src={selectedTeam.badgeUrl}
+                    src={selectedTeam.badgeUrl || selectedTeam.crestUrl}
                     alt={selectedTeam.name}
                     className="w-16 h-16 object-contain drop-shadow-md"
                   />
@@ -76,9 +70,8 @@ function HeroSection({ onOpenTeamModal, selectedTeam }: HeroSectionProps) {
                   <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">
                     {selectedTeam.name}
                   </h1>
-                  <p className="text-sm text-muted font-medium">
-                    {selectedTeam.country ||
-                      t("common.unknown", "Professional Team")}
+                  <p className="text-xs text-gray-400 mt-1">
+                    {selectedTeam?.country || "Professional Team"}
                   </p>
                 </div>
               </div>
@@ -124,7 +117,6 @@ export default function Home() {
   );
   const [showAll, setShowAll] = useState(false);
 
-  // Carrega o time favorito ao iniciar e escuta alterações
   useEffect(() => {
     const loadFavoriteTeam = () => {
       const stored = localStorage.getItem("favorite_team");
@@ -148,11 +140,10 @@ export default function Home() {
     };
   }, []);
 
-  // Subscribe to live news via Socket.IO
   useNewsRealtime();
 
   const { data: competitions } = useQuery({
-    queryKey: ['competitions'],
+    queryKey: ["competitions"],
     queryFn: listCompetitions,
     staleTime: 10 * 60_000,
   });
@@ -166,12 +157,9 @@ export default function Home() {
 
   const teamId = selectedTeam?.id;
 
-  // Busca as partidas agendadas estritamente do time favorito
   const { data: upcomingMatches, isLoading: loadingUpcoming } = useQuery({
     queryKey: ["upcoming-matches", { teamId, competitionId }],
     queryFn: async (): Promise<MatchListItem[]> => {
-      // With a favourite club picked, show that club's fixtures; otherwise fall
-      // back to the full scheduled list filtered by competition.
       if (!teamId) {
         return listMatches({ status: "scheduled", competitionId, limit: 50 });
       }
@@ -196,13 +184,11 @@ export default function Home() {
 
   return (
     <div className="space-y-10">
-      {/* ── Hero ── */}
       <HeroSection
         onOpenTeamModal={() => setIsTeamModalOpen(true)}
         selectedTeam={selectedTeam}
       />
 
-      {/* ── Live matches ── */}
       {(loadingLive || (liveMatches && liveMatches.length > 0)) && (
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -219,8 +205,16 @@ export default function Home() {
                   <SkeletonCard key={i} />
                 ))
               : liveMatches?.map((m) => {
-                  const homeTeamObj = resolveTeam(m.homeTeam, m.homeTeamId, teamsMap);
-                  const awayTeamObj = resolveTeam(m.awayTeam, m.awayTeamId, teamsMap);
+                  const homeTeamObj = resolveTeam(
+                    m.homeTeam,
+                    m.homeTeamId,
+                    teamsMap,
+                  );
+                  const awayTeamObj = resolveTeam(
+                    m.awayTeam,
+                    m.awayTeamId,
+                    teamsMap,
+                  );
 
                   return (
                     <MatchCard
@@ -235,7 +229,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* ── Upcoming matches (Limitado a 6 com Botão Ver Mais) ── */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-extrabold text-foreground">
@@ -251,29 +244,34 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* League filter */}
         {competitions && competitions.length > 0 && (
           <div className="flex gap-2 flex-wrap mb-4">
             <button
-              onClick={() => { setCompetitionId(undefined); setShowAll(false); }}
+              onClick={() => {
+                setCompetitionId(undefined);
+                setShowAll(false);
+              }}
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+                "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
                 !competitionId
-                  ? 'bg-brand text-white border-brand'
-                  : 'bg-surface-2 text-muted border-edge/12 hover:text-foreground',
+                  ? "bg-brand text-white border-brand"
+                  : "bg-surface-2 text-muted border-edge/12 hover:text-foreground",
               )}
             >
-              {t('common.all')}
+              {t("common.all")}
             </button>
             {competitions.map((c) => (
               <button
                 key={c.id}
-                onClick={() => { setCompetitionId(c.id === competitionId ? undefined : c.id); setShowAll(false); }}
+                onClick={() => {
+                  setCompetitionId(c.id === competitionId ? undefined : c.id);
+                  setShowAll(false);
+                }}
                 className={cn(
-                  'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+                  "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
                   competitionId === c.id
-                    ? 'bg-brand text-white border-brand'
-                    : 'bg-surface-2 text-muted border-edge/12 hover:text-foreground',
+                    ? "bg-brand text-white border-brand"
+                    : "bg-surface-2 text-muted border-edge/12 hover:text-foreground",
                 )}
               >
                 {c.name}
@@ -292,8 +290,16 @@ export default function Home() {
               ? upcomingMatches
               : upcomingMatches.slice(0, UPCOMING_PAGE_SIZE)
             ).map((m) => {
-              const homeTeamObj = resolveTeam(m.homeTeam, m.homeTeamId, teamsMap);
-              const awayTeamObj = resolveTeam(m.awayTeam, m.awayTeamId, teamsMap);
+              const homeTeamObj = resolveTeam(
+                m.homeTeam,
+                m.homeTeamId,
+                teamsMap,
+              );
+              const awayTeamObj = resolveTeam(
+                m.awayTeam,
+                m.awayTeamId,
+                teamsMap,
+              );
 
               return (
                 <MatchCard
@@ -311,20 +317,24 @@ export default function Home() {
           )}
         </div>
 
-        {/* Show more / show less */}
-        {!loadingUpcoming && upcomingMatches && upcomingMatches.length > UPCOMING_PAGE_SIZE && (
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={() => setShowAll((v) => !v)}
-              className="px-5 py-2 rounded-lg bg-surface-2 border border-edge/12 text-sm font-semibold text-muted hover:text-foreground transition-colors"
-            >
-              {showAll ? t('common.showLess') : t('common.showMore', { n: upcomingMatches.length - UPCOMING_PAGE_SIZE })}
-            </button>
-          </div>
-        )}
+        {!loadingUpcoming &&
+          upcomingMatches &&
+          upcomingMatches.length > UPCOMING_PAGE_SIZE && (
+            <div className="flex justify-center mt-4">
+              <button
+                onClick={() => setShowAll((v) => !v)}
+                className="px-5 py-2 rounded-lg bg-surface-2 border border-edge/12 text-sm font-semibold text-muted hover:text-foreground transition-colors"
+              >
+                {showAll
+                  ? t("common.showLess")
+                  : t("common.showMore", {
+                      n: upcomingMatches.length - UPCOMING_PAGE_SIZE,
+                    })}
+              </button>
+            </div>
+          )}
       </section>
 
-      {/* ── Latest news ── */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-extrabold text-foreground">
@@ -343,14 +353,13 @@ export default function Home() {
           ) : news?.length ? (
             news.slice(0, 6).map((a) => <NewsCard key={a.id} article={a} />)
           ) : (
-            <p className="text-muted text-sm col-span-full">
+            <p className="test-muted text-sm col-span-full">
               {t("news.noNews")}
             </p>
           )}
         </div>
       </section>
 
-      {/* Modal Real de Seleção de Time */}
       <SelectFavoriteTeamModal
         isOpen={isTeamModalOpen}
         isFirstTime={false}

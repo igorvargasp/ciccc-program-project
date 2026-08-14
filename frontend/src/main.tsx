@@ -4,11 +4,12 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { BrowserRouter } from "react-router-dom";
 import { I18nextProvider } from "react-i18next";
+import { Toaster } from "react-hot-toast"; // <--- 1. Importe o Toaster aqui
 import App from "./App";
 import { queryClient } from "./lib/queryClient";
 import i18n from "./lib/i18n";
 import { useAppStore } from "./store/app";
-import { AuthProvider } from "./context/AuthContext"; // <--- Verifique se o caminho está correto
+import { AuthProvider } from "./context/AuthContext";
 import "./index.css";
 
 // Restore lang preference before render
@@ -27,6 +28,19 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
           <AuthProvider>
+            {/* 2. Adicione o Toaster dentro dos contextos globais */}
+            <Toaster
+              position="top-right"
+              reverseOrder={false}
+              toastOptions={{
+                style: {
+                  background: "var(--surface, #18181b)",
+                  color: "var(--foreground, #fff)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  fontSize: "13px",
+                },
+              }}
+            />
             <App />
           </AuthProvider>
         </BrowserRouter>

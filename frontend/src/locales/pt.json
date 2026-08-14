@@ -7,9 +7,10 @@
     "players": "Jogadores",
     "news": "Notícias",
     "simulator": "Simulador",
-    "lineups": "Meus Escalados",
+    "lineup": "Escalações",
     "notifications": "Notificações",
-    "profile": "Configurações"
+    "profile": "Configurações",
+    "myteam": "Meu Time"
   },
   "register": {
     "heroTitle1": "PREVEJA O",
@@ -96,7 +97,7 @@
     }
   },
   "home": {
-    "title": "Smart Football Hub",
+    "title": "Meu Time Favorito",
     "subtitle": "Placar ao vivo, estatísticas, notícias e simulações — tudo em um só lugar.",
     "liveMatches": "Ao Vivo",
     "upcomingMatches": "Próximos Jogos",
@@ -257,5 +258,24 @@
     "legalDetails": "Detalhes Legais",
     "privacyNode": "Nó de Privacidade",
     "securityStandard": "Padrão de Segurança"
+  },
+  "modal": {
+    "initialSetup": "Configuração Inicial",
+    "preferences": "Preferências",
+    "selectMainClub": "Selecione seu Clube Principal",
+    "changeFavoriteTeam": "Alterar Time Favorito",
+    "subtitleSimple": "Busque pelo nome ou filtre por competição para encontrar seu clube favorito.",
+    "clubName": "Nome do Clube",
+    "searchPlaceholder": "ex: Flamengo, Real Madrid...",
+    "competition": "Competição",
+    "allCompetitions": "Todas as Competições",
+    "resultsCount": "{{count}} clubes encontrados",
+    "sortAZ": "Ordem: A-Z",
+    "sortZA": "Ordem: Z-A",
+    "querying": "Consultando base de dados...",
+    "noResults": "Nenhum clube encontrado com os critérios selecionados.",
+    "confirmTeam": "Confirmar {{name}}",
+    "selectTeamFirst": "Selecione um Time Primeiro",
+    "toastSuccess": "Time favorito atualizado com sucesso!"
   }
 }

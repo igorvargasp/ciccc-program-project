@@ -7,9 +7,10 @@
     "players": "Players",
     "news": "News",
     "simulator": "Simulator",
-    "lineups": "My Lineups",
+    "lineup": "Lineups",
     "notifications": "Notifications",
-    "profile": "Settings"
+    "profile": "Settings",
+    "myteam": "My Team"
   },
   "register": {
     "heroTitle1": "PREDICT THE",
@@ -96,7 +97,7 @@
     }
   },
   "home": {
-    "title": "Football Intelligence Hub",
+    "title": "My Favorite Team",
     "subtitle": "Live scores, stats, news, and simulations — all in one place.",
     "liveMatches": "Live Now",
     "upcomingMatches": "Upcoming Matches",
@@ -257,5 +258,24 @@
     "legalDetails": "Legal Details",
     "privacyNode": "Privacy Node",
     "securityStandard": "Security Standard"
+  },
+  "modal": {
+    "initialSetup": "Initial Setup",
+    "preferences": "Preferences",
+    "selectMainClub": "Select Your Main Club",
+    "changeFavoriteTeam": "Change Favorite Team",
+    "subtitleSimple": "Search by name or filter by competition to find your favorite club.",
+    "clubName": "Club Name",
+    "searchPlaceholder": "e.g. Flamengo, Real Madrid...",
+    "competition": "Competition",
+    "allCompetitions": "All Competitions",
+    "resultsCount": "{{count}} clubs found",
+    "sortAZ": "Order: A-Z",
+    "sortZA": "Order: Z-A",
+    "querying": "Querying database...",
+    "noResults": "No clubs found matching your criteria.",
+    "confirmTeam": "Confirm {{name}}",
+    "selectTeamFirst": "Select a Team First",
+    "toastSuccess": "Favorite team updated successfully!"
   }
 }

@@ -23,10 +23,10 @@ const mainNav = [
   { to: "/competitions", icon: Trophy, label: "nav.competitions" },
   { to: "/teams", icon: Users, label: "nav.teams" },
   { to: "/players", icon: User, label: "nav.players" },
-  { to: "/lineup", icon: Shield, label: "Lineup" },
+  { to: "/lineup", icon: Shield, label: "nav.lineup" },
   { to: "/news", icon: Newspaper, label: "nav.news" },
   { to: "/simulator", icon: Swords, label: "nav.simulator" },
-  { to: "/my-team", icon: Star, label: "My Team" },
+  { to: "/my-team", icon: Star, label: "nav.myteam" },
 ];
 
 const bottomNav = [

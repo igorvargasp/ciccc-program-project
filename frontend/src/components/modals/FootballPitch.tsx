@@ -50,12 +50,14 @@ interface FootballPitchProps {
   formation: string;
   lineupPlayers: Record<number, Player>;
   onSelectSlot: (index: number) => void;
+  captainId?: string | number | null;
 }
 
 export default function FootballPitch({
   formation,
   lineupPlayers,
   onSelectSlot,
+  captainId,
 }: FootballPitchProps) {
   const currentFormation = FORMATIONS[formation] || FORMATIONS["4-3-3"];
 
@@ -81,6 +83,8 @@ export default function FootballPitch({
       <div className="absolute inset-0">
         {currentFormation.map((pos, index) => {
           const player = lineupPlayers[index];
+          const isCaptain = player && captainId === player.id;
+
           return (
             <div
               key={index}
@@ -88,7 +92,9 @@ export default function FootballPitch({
               className="absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group cursor-pointer"
               onClick={() => onSelectSlot(index)}
             >
-              <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#14171c]/90 border-2 border-[#00d2fd] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+              <div
+                className={`relative w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#14171c]/90 border-2 ${isCaptain ? "border-amber-400 ring-2 ring-amber-400/50" : "border-[#00d2fd]"} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform overflow-hidden`}
+              >
                 {player?.photoUrl ? (
                   <img
                     src={player.photoUrl}
@@ -102,6 +108,13 @@ export default function FootballPitch({
                 ) : (
                   <span className="text-xs font-black text-[#00d2fd] uppercase tracking-tighter">
                     {pos.role}
+                  </span>
+                )}
+
+                {/* Badge de Capitão (C) */}
+                {isCaptain && (
+                  <span className="absolute bottom-0 right-0 bg-amber-400 text-black text-[9px] font-black px-1 rounded-tl shadow">
+                    C
                   </span>
                 )}
               </div>

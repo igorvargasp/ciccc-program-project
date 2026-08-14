@@ -1,7 +1,43 @@
 import { useState, useEffect } from "react";
-import { Search, X } from "lucide-react";
-
+import {
+  Search,
+  X,
+  Shield,
+  Globe2,
+  ArrowDownAZ,
+  ArrowUpAZ,
+  Filter,
+  Users,
+  Building2,
+} from "lucide-react";
 import type { LineupSlotPlayer as Player } from "@/types";
+
+const POSITIONS = ["GK", "DEF", "MID", "FWD"];
+
+const getCategory = (pos: string) => {
+  const map: Record<string, string> = {
+    LB: "DEF",
+    CB: "DEF",
+    RB: "DEF",
+    LWB: "DEF",
+    RWB: "DEF",
+    CDM: "MID",
+    CM: "MID",
+    LM: "MID",
+    RM: "MID",
+    CAM: "MID",
+    LW: "FWD",
+    RW: "FWD",
+    ST: "FWD",
+    CF: "FWD",
+  };
+  return map[pos] || pos;
+};
+
+interface Team {
+  id: string | number;
+  name: string;
+}
 
 interface PlayerSearchModalProps {
   isOpen: boolean;
@@ -16,10 +52,84 @@ export default function PlayerSearchModal({
   onSelectPlayer,
   positionFilter,
 }: PlayerSearchModalProps) {
+  const [activeTab, setActiveTab] = useState<"my-team" | "global">("my-team");
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Estados para a busca e seleção dinâmica de times no Global Market
+  const [teamSearchQuery, setTeamSearchQuery] = useState("");
+  const [teamResults, setTeamResults] = useState<Team[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [showTeamDropdown, setShowTeamDropdown] = useState(false);
+  const [loadingTeams, setLoadingTeams] = useState(false);
+
+  const [selectedPosition, setSelectedPosition] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
+  const [favoriteTeamId, setFavoriteTeamId] = useState<string | null>(null);
+  const [favoriteTeamName, setFavoriteTeamName] = useState<string>("My Team");
 
+  // Resetar filtros ao trocar de aba
+  useEffect(() => {
+    setSearchTerm("");
+    setTeamSearchQuery("");
+    setSelectedTeam(null);
+    setTeamResults(false as any);
+    setShowTeamDropdown(false);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (isOpen && positionFilter) {
+      setSelectedPosition(getCategory(positionFilter));
+    }
+  }, [isOpen, positionFilter]);
+
+  // Carregar time favorito do localStorage
+  useEffect(() => {
+    if (!isOpen) return;
+    const savedFav = localStorage.getItem("favorite_team");
+    if (savedFav) {
+      try {
+        const parsed = JSON.parse(savedFav);
+        setFavoriteTeamId(parsed.id || parsed.team?.id);
+        setFavoriteTeamName(parsed.name || parsed.team?.name || "My Team");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [isOpen]);
+
+  // Buscar times dinamicamente ao digitar no Global Market
+  useEffect(() => {
+    if (activeTab !== "global" || teamSearchQuery.length < 2 || selectedTeam) {
+      setTeamResults([]);
+      setShowTeamDropdown(false);
+      return;
+    }
+
+    const fetchTeams = async () => {
+      setLoadingTeams(true);
+      try {
+        const response = await fetch(
+          `/api/teams?search=${encodeURIComponent(teamSearchQuery)}`,
+        );
+        const result = await response.json();
+        // Garante que pegamos um array de times
+        const teamsData = result.data || result || [];
+        setTeamResults(teamsData);
+        setShowTeamDropdown(true);
+      } catch (error) {
+        console.error("Erro ao buscar times:", error);
+      } finally {
+        setLoadingTeams(false);
+      }
+    };
+
+    const delay = setTimeout(fetchTeams, 300);
+    return () => clearTimeout(delay);
+  }, [teamSearchQuery, activeTab, selectedTeam]);
+
+  // Buscar Jogadores com base nos filtros ativos
   useEffect(() => {
     if (!isOpen) return;
 
@@ -28,61 +138,203 @@ export default function PlayerSearchModal({
       try {
         const params = new URLSearchParams();
         if (searchTerm) params.append("search", searchTerm);
-        if (positionFilter) params.append("position", positionFilter);
-        params.append("limit", "20");
+        if (selectedPosition) params.append("position", selectedPosition);
 
+        if (activeTab === "my-team" && favoriteTeamId) {
+          params.append("teamId", String(favoriteTeamId));
+        } else if (activeTab === "global") {
+          if (selectedTeam) {
+            // Se um time foi selecionado pelo dropdown, filtra pelo ID do time
+            params.append("teamId", String(selectedTeam.id));
+          } else if (teamSearchQuery) {
+            // Fallback caso o usuário digite mas não clique (opcional)
+            params.append("teamName", teamSearchQuery);
+          }
+        }
+
+        params.append("limit", "50");
         const response = await fetch(`/api/players?${params.toString()}`);
         const result = await response.json();
 
-        setPlayers(result.data || []);
+        let data = result.data || [];
+        data.sort((a: Player, b: Player) => {
+          return sortOrder === "asc"
+            ? a.fullName.localeCompare(b.fullName)
+            : b.fullName.localeCompare(a.fullName);
+        });
+
+        setPlayers(data);
       } catch (error) {
-        console.error("Erro ao buscar jogadores:", error);
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
 
-    const delayDebounce = setTimeout(() => {
-      fetchPlayers();
-    }, 300);
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchTerm, isOpen, positionFilter]);
+    const delay = setTimeout(fetchPlayers, 300);
+    return () => clearTimeout(delay);
+  }, [
+    searchTerm,
+    teamSearchQuery,
+    selectedTeam,
+    isOpen,
+    selectedPosition,
+    sortOrder,
+    activeTab,
+    favoriteTeamId,
+  ]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-[#14171c] border border-[#414755]/40 rounded-xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
-        {/* Cabeçalho do Modal */}
+      <div className="bg-[#14171c] border border-[#414755]/40 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh]">
         <div className="flex items-center justify-between p-4 border-b border-[#414755]/30">
           <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em]">
-            Select Player {positionFilter ? `(${positionFilter})` : ""}
+            Select Player
           </h3>
           <button
             onClick={onClose}
-            className="text-[#8b90a0] hover:text-white transition-colors cursor-pointer"
+            className="text-[#8b90a0] hover:text-white cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Barra de Pesquisa */}
-        <div className="p-4 border-b border-[#414755]/30">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#8b90a0]" />
-            <input
-              type="text"
-              placeholder="Search player by name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#0d0f12] border border-[#414755]/40 rounded-lg pl-9 pr-3 py-2 text-xs font-bold text-[#e2e2e8] focus:outline-none focus:border-[#00d2fd] transition-colors"
-              autoFocus
-            />
+        <div className="px-4 pt-3">
+          <div className="flex bg-[#0d0f12] p-1 rounded-lg border border-[#414755]/30">
+            <button
+              onClick={() => setActiveTab("my-team")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                activeTab === "my-team"
+                  ? "bg-[#00d2fd]/20 text-[#00d2fd] border border-[#00d2fd]/50"
+                  : "text-[#8b90a0] hover:text-white"
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5" /> {favoriteTeamName}
+            </button>
+            <button
+              onClick={() => setActiveTab("global")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                activeTab === "global"
+                  ? "bg-[#00d2fd]/20 text-[#00d2fd] border border-[#00d2fd]/50"
+                  : "text-[#8b90a0] hover:text-white"
+              }`}
+            >
+              <Globe2 className="w-3.5 h-3.5" /> Global Market
+            </button>
           </div>
         </div>
 
-        {/* Lista de Jogadores */}
+        <div className="p-4 border-b border-[#414755]/30 space-y-3 relative">
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#8b90a0]" />
+            <input
+              placeholder="Search player name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-[#0d0f12] border border-[#414755]/40 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#00d2fd]"
+            />
+          </div>
+
+          {/* Campo de Busca de Time Dinâmico (Apenas no Global Market) */}
+          {activeTab === "global" && (
+            <div className="relative">
+              <Building2 className="absolute left-3 top-2.5 w-4 h-4 text-[#8b90a0]" />
+              {selectedTeam ? (
+                <div className="flex items-center justify-between w-full bg-[#0d0f12] border border-[#00d2fd] rounded-lg pl-9 pr-3 py-2">
+                  <span className="text-xs font-bold text-white truncate">
+                    Team: {selectedTeam.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTeam(null);
+                      setTeamSearchQuery("");
+                    }}
+                    className="text-[#00d2fd] hover:text-white cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <input
+                  placeholder="Search and select a team worldwide..."
+                  value={teamSearchQuery}
+                  onChange={(e) => {
+                    setTeamSearchQuery(e.target.value);
+                    if (!showTeamDropdown) setShowTeamDropdown(true);
+                  }}
+                  className="w-full bg-[#0d0f12] border border-[#414755]/40 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#00d2fd]"
+                />
+              )}
+
+              {/* Dropdown de sugestões de times */}
+              {showTeamDropdown &&
+                !selectedTeam &&
+                teamSearchQuery.length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#14171c] border border-[#414755] rounded-lg shadow-2xl z-20 max-h-40 overflow-y-auto">
+                    {loadingTeams ? (
+                      <div className="p-3 text-center text-xs text-[#8b90a0]">
+                        Searching teams...
+                      </div>
+                    ) : teamResults.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-[#8b90a0]">
+                        No teams found
+                      </div>
+                    ) : (
+                      teamResults.map((team) => (
+                        <div
+                          key={team.id}
+                          onClick={() => {
+                            setSelectedTeam(team);
+                            setShowTeamDropdown(false);
+                            setTeamSearchQuery("");
+                          }}
+                          className="px-3 py-2 text-xs font-bold text-white hover:bg-[#00d2fd]/20 hover:text-[#00d2fd] cursor-pointer transition-colors border-b border-[#414755]/20 last:border-none"
+                        >
+                          {team.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-1.5 bg-[#0d0f12] border border-[#414755]/40 rounded-lg px-3 py-1.5">
+              <Filter className="w-3.5 h-3.5 text-[#8b90a0]" />
+              <select
+                value={selectedPosition}
+                onChange={(e) => setSelectedPosition(e.target.value)}
+                className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+              >
+                <option value="" className="bg-[#14171c]">
+                  All Categories
+                </option>
+                {POSITIONS.map((pos) => (
+                  <option key={pos} value={pos} className="bg-[#14171c]">
+                    {pos}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() =>
+                setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
+              }
+              className="flex items-center gap-1.5 bg-[#0d0f12] border border-[#414755]/40 hover:border-[#00d2fd] px-3 py-2 rounded-lg text-xs font-bold text-white cursor-pointer transition-colors"
+            >
+              {sortOrder === "asc" ? (
+                <ArrowDownAZ className="w-4 h-4 text-[#00d2fd]" />
+              ) : (
+                <ArrowUpAZ className="w-4 h-4 text-[#00d2fd]" />
+              )}
+            </button>
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading ? (
             <p className="text-center text-xs text-[#8b90a0] py-6">
@@ -90,7 +342,7 @@ export default function PlayerSearchModal({
             </p>
           ) : players.length === 0 ? (
             <p className="text-center text-xs text-[#8b90a0] py-6">
-              No players found.
+              No players found matching criteria.
             </p>
           ) : (
             players.map((player) => (
@@ -99,7 +351,7 @@ export default function PlayerSearchModal({
                 onClick={() => onSelectPlayer(player)}
                 className="flex items-center gap-3 p-2.5 rounded-lg bg-[#0d0f12] border border-[#414755]/20 hover:border-[#00d2fd] cursor-pointer transition-all group"
               >
-                <div className="w-10 h-10 rounded-full bg-[#14171c] overflow-hidden flex-shrink-0 border border-[#414755]/40 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-[#14171c] border border-[#414755]/40 flex items-center justify-center overflow-hidden shrink-0">
                   {player.photoUrl ? (
                     <img
                       src={player.photoUrl}
@@ -116,21 +368,10 @@ export default function PlayerSearchModal({
                   <h4 className="text-xs font-bold text-white truncate group-hover:text-[#00d2fd] transition-colors">
                     {player.fullName}
                   </h4>
-                  <div className="flex items-center gap-2 text-[10px] text-[#8b90a0]">
-                    <span>{player.position}</span>
-                    {player.teamName && (
-                      <>
-                        <span>•</span>
-                        <span className="truncate">{player.teamName}</span>
-                      </>
-                    )}
-                    {player.nationality && (
-                      <>
-                        <span>•</span>
-                        <span>{player.nationality}</span>
-                      </>
-                    )}
-                  </div>
+                  <p className="text-[10px] text-[#00d2fd] font-bold truncate">
+                    {player.position}{" "}
+                    {player.teamName ? `• ${player.teamName}` : ""}
+                  </p>
                 </div>
               </div>
             ))

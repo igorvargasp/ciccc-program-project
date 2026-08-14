@@ -7,12 +7,13 @@
     "players": "Jugadores",
     "news": "Noticias",
     "simulator": "Simulador",
-    "lineups": "Mis Alineaciones",
+    "lineup": "Alineaciones",
     "notifications": "Notificaciones",
-    "profile": "Ajustes"
+    "profile": "Ajustes",
+    "myteam": "Mi Equipo"
   },
   "home": {
-    "title": "Smart Football Hub",
+    "title": "Mi Equipo Favorito",
     "subtitle": "Marcadores en vivo, estadísticas, noticias y simulaciones — todo en un lugar.",
     "liveMatches": "En Vivo",
     "upcomingMatches": "Próximos Partidos",
@@ -152,5 +153,24 @@
     "DEF": "Defensa",
     "MID": "Centrocampista",
     "FWD": "Delantero"
+  },
+  "modal": {
+    "initialSetup": "Configuración Inicial",
+    "preferences": "Preferencias",
+    "selectMainClub": "Selecciona tu Club Principal",
+    "changeFavoriteTeam": "Cambiar Equipo Favorito",
+    "subtitleSimple": "Busca por nombre o filtra por competición para encontrar tu club favorito.",
+    "clubName": "Nombre del Club",
+    "searchPlaceholder": "ej. Flamengo, Real Madrid...",
+    "competition": "Competición",
+    "allCompetitions": "Todas las Competiciones",
+    "resultsCount": "{{count}} clubes encontrados",
+    "sortAZ": "Orden: A-Z",
+    "sortZA": "Orden: Z-A",
+    "querying": "Consultando base de datos...",
+    "noResults": "No se encontraron clubes que coincidan con tu criterio.",
+    "confirmTeam": "Confirmar {{name}}",
+    "selectTeamFirst": "Selecciona un Equipo Primero",
+    "toastSuccess": "¡Equipo favorito actualizado con éxito!"
   }
 }
