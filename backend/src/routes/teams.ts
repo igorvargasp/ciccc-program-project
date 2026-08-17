@@ -23,20 +23,42 @@ const listQuery = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(50),
 });
 
+const teamDetailQuery = z.object({
+  seasonId: z.string().uuid().optional(),
+});
+
 // GET /api/teams — list/search teams
 teamsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const { search, country, competitionId, limit } = listQuery.parse(req.query);
+    const { search, country, competitionId, limit } = listQuery.parse(
+      req.query,
+    );
 
     const filters = [];
     if (search) filters.push(ilike(teams.name, `%${search}%`));
     if (country) filters.push(eq(teams.country, country));
     if (competitionId) {
-      const seasonIds = (await db.select({ id: seasons.id }).from(seasons).where(eq(seasons.competitionId, competitionId))).map((s) => s.id);
-      if (!seasonIds.length) { res.json({ data: [] }); return; }
-      const teamIds = (await db.selectDistinct({ id: standings.teamId }).from(standings).where(inArray(standings.seasonId, seasonIds))).map((s) => s.id);
-      if (!teamIds.length) { res.json({ data: [] }); return; }
+      const seasonIds = (
+        await db
+          .select({ id: seasons.id })
+          .from(seasons)
+          .where(eq(seasons.competitionId, competitionId))
+      ).map((s) => s.id);
+      if (!seasonIds.length) {
+        res.json({ data: [] });
+        return;
+      }
+      const teamIds = (
+        await db
+          .selectDistinct({ id: standings.teamId })
+          .from(standings)
+          .where(inArray(standings.seasonId, seasonIds))
+      ).map((s) => s.id);
+      if (!teamIds.length) {
+        res.json({ data: [] });
+        return;
+      }
       filters.push(inArray(teams.id, teamIds));
     }
 
@@ -53,35 +75,6 @@ teamsRouter.get(
       .limit(limit);
 
     res.json({ data: rows });
-  }),
-);
-
-// GET /api/teams/:id — team detail with stats and crest
-teamsRouter.get(
-  "/:id",
-  asyncHandler(async (req, res) => {
-    const teamId = req.params.id;
-
-    const [team] = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.id, teamId))
-      .limit(1);
-
-    if (!team) throw notFound("Team");
-
-    const stats = {
-      winRate: "68%",
-      goalsScored: 42,
-      cleanSheets: 12,
-    };
-
-    res.json({
-      data: {
-        ...team,
-        stats,
-      },
-    });
   }),
 );
 
@@ -230,5 +223,115 @@ teamsRouter.get(
     );
 
     res.json({ data: result });
+  }),
+);
+
+// GET /api/teams/:id — team detail with dynamic detailed stats per season
+teamsRouter.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const teamId = req.params.id;
+    const { seasonId } = teamDetailQuery.parse(req.query);
+
+    // 1. Busca o time
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.id, teamId))
+      .limit(1);
+
+    if (!team) throw notFound("Team");
+
+    // 2. Determina qual season usar (se não passar na query, pega a temporada atual/isCurrent do time)
+    let targetSeasonId = seasonId;
+    if (!targetSeasonId) {
+      const [currentSeason] = await db
+        .select({ id: seasons.id })
+        .from(seasons)
+        .innerJoin(standings, eq(seasons.id, standings.seasonId))
+        .where(and(eq(standings.teamId, teamId), eq(seasons.isCurrent, true)))
+        .limit(1);
+
+      if (currentSeason) {
+        targetSeasonId = currentSeason.id;
+      }
+    }
+
+    // 3. Monta os filtros para as partidas finalizadas da temporada
+    const matchFilters = [
+      or(eq(matches.homeTeamId, teamId), eq(matches.awayTeamId, teamId)),
+      eq(matches.status, "finished"),
+    ];
+
+    if (targetSeasonId) {
+      matchFilters.push(eq(matches.seasonId, targetSeasonId));
+    }
+
+    const playedMatches = await db
+      .select()
+      .from(matches)
+      .where(and(...matchFilters));
+
+    // 4. Variáveis de cálculo para as novas estatísticas
+    let wins = 0,
+      draws = 0,
+      losses = 0;
+    let goalsScored = 0,
+      goalsAgainst = 0;
+    let cleanSheets = 0;
+    let homeWins = 0,
+      awayWins = 0;
+
+    playedMatches.forEach((m) => {
+      const isHome = m.homeTeamId === teamId;
+      const myScore = isHome ? m.homeScore! : m.awayScore!;
+      const opponentScore = isHome ? m.awayScore! : m.homeScore!;
+
+      goalsScored += myScore;
+      goalsAgainst += opponentScore;
+
+      if (myScore > opponentScore) {
+        wins++;
+        isHome ? homeWins++ : awayWins++;
+      } else if (myScore === opponentScore) {
+        draws++;
+      } else {
+        losses++;
+      }
+
+      if (opponentScore === 0) cleanSheets++;
+    });
+
+    const total = playedMatches.length;
+    const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+
+    const stats = {
+      seasonId: targetSeasonId || null,
+      general: {
+        played: total,
+        wins,
+        draws,
+        losses,
+        winRate: `${winRate}%`,
+      },
+      goals: {
+        scored: goalsScored,
+        conceded: goalsAgainst,
+        avgScored: total > 0 ? Number((goalsScored / total).toFixed(1)) : 0,
+        avgConceded: total > 0 ? Number((goalsAgainst / total).toFixed(1)) : 0,
+        cleanSheets,
+      },
+      venuePerformance: {
+        homeWins,
+        awayWins,
+      },
+    };
+
+    res.json({
+      data: {
+        ...team,
+        stats,
+      },
+    });
   }),
 );
