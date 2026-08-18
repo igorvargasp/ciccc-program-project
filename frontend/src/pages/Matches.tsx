@@ -96,6 +96,21 @@ export default function Matches() {
     (!competitionId ||
       (teamCompetitionId && String(competitionId) === teamCompetitionId));
 
+  const { data: competitionsData } = useQuery({
+    queryKey: ["competitions"],
+    queryFn: listCompetitions,
+    staleTime: 10 * 60_000,
+  });
+
+  // Mapa auxiliar para buscar o nome da competição rapidamente pelo ID
+  const competitionsMap = new Map<string, any>();
+  if (competitionsData && Array.isArray(competitionsData)) {
+    competitionsData.forEach((comp: any) => {
+      competitionsMap.set(String(comp.id), comp);
+      if (comp.code) competitionsMap.set(String(comp.code), comp);
+    });
+  }
+
   const { data: matches, isLoading } = useQuery({
     queryKey: [
       "matches",
@@ -133,12 +148,6 @@ export default function Matches() {
       status === "live" || viewMode === "my-team" ? 30_000 : undefined,
   });
 
-  // Busca o nome e o emblema/bandeira da liga selecionada direto da query de competições
-  const { data: competitionsData } = useQuery({
-    queryKey: ["competitions"],
-    queryFn: listCompetitions,
-    staleTime: 10 * 60_000,
-  });
   const selectedCompObj = competitionsData?.find(
     (c) => String(c.id) === String(competitionId),
   );
@@ -156,16 +165,34 @@ export default function Matches() {
     }
   }, [viewMode]);
 
+  // Função auxiliar melhorada para resolver o nome e ID da competição da partida
+  const resolveCompetitionInfo = (m: any) => {
+    const rawCompId =
+      m.competitionId ||
+      m.competition?.id ||
+      m.leagueId ||
+      m.competition_id ||
+      "other";
+
+    const compFromMap = competitionsMap.get(String(rawCompId));
+
+    const compName =
+      m.competition?.name ||
+      m.competitionName ||
+      m.competition_name ||
+      compFromMap?.name ||
+      (rawCompId !== "other"
+        ? `Competição ${rawCompId}`
+        : "Outras Competições");
+
+    return { compId: String(rawCompId), compName };
+  };
+
   /**
    * Group by competition and show a single round of each: the next one when
    * looking at fixtures, the most recent one when looking at results. Showing
    * every round of every competition at once buried the round the user
    * actually came for.
-   *
-   * The API already sorts scheduled ascending and everything else descending,
-   * so the first match of a group is the relevant round in both cases — more
-   * dependable than min/max over matchday, which competitions number
-   * inconsistently.
    */
   const groupMatchesByCompetition = (matchList: any[]) => {
     const groups = new Map<
@@ -174,13 +201,14 @@ export default function Matches() {
     >();
 
     matchList.forEach((m) => {
-      const compId = String(m.competition?.id || m.competitionId || "other");
+      const { compId, compName } = resolveCompetitionInfo(m);
+
       if (!groups.has(compId)) {
         groups.set(compId, {
           id: compId,
-          competitionName:
-            m.competition?.name || m.competitionName || "Outras Competições",
-          logoUrl: m.competition?.logoUrl,
+          competitionName: compName,
+          logoUrl:
+            m.competition?.logoUrl ?? competitionsMap.get(compId)?.logoUrl,
           matches: [],
         });
       }
@@ -219,9 +247,45 @@ export default function Matches() {
     });
   };
 
+  const groupFinishedMatchesByRound = (matchList: any[]) => {
+    const groups: {
+      [key: string]: { round: string; competitionName: string; matches: any[] };
+    } = {};
+
+    matchList.forEach((m) => {
+      const round = String(m.matchday || m.round || "N/A");
+      const { compId, compName } = resolveCompetitionInfo(m);
+      const groupKey = `${compId}-${round}`;
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          round,
+          competitionName: compName,
+          matches: [],
+        };
+      }
+      groups[groupKey].matches.push(m);
+    });
+
+    return Object.values(groups).sort((a, b) => {
+      if (a.competitionName !== b.competitionName) {
+        return a.competitionName.localeCompare(b.competitionName);
+      }
+      return b.round.localeCompare(a.round, undefined, { numeric: true });
+    });
+  };
+
   const groupedMatches =
     !competitionId && matches && Array.isArray(matches)
       ? groupMatchesByCompetition(matches)
+      : [];
+
+  const groupedFinishedMatches =
+    status === "finished" &&
+    viewMode === "status" &&
+    matches &&
+    Array.isArray(matches)
+      ? groupFinishedMatchesByRound(matches)
       : [];
 
   const myTeamLiveMatches =
@@ -368,7 +432,7 @@ export default function Matches() {
           </div>
         </div>
 
-        {/* CONTEÚDO DA PÁGINA */}
+        {/* PAGE CONTENT */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -543,6 +607,41 @@ export default function Matches() {
             icon={<Trophy className="w-10 h-10 text-[#8b90a0]" />}
             title={t("matches.noMatches", "No matches found.")}
           />
+        ) : status === "finished" && viewMode === "status" ? (
+          <div className="space-y-8">
+            {groupedFinishedMatches.map((group, idx) => (
+              <div key={idx} className="space-y-3">
+                <div className="flex items-center gap-2 bg-[#1a1f29] px-4 py-2 rounded-lg border border-[#414755]/20">
+                  <History className="w-4 h-4 text-amber-400" />
+                  <h4 className="text-xs font-black text-foreground uppercase tracking-widest">
+                    {group.competitionName} - Rodada {group.round}
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {group.matches.map((m) => {
+                    const homeTeamObj =
+                      typeof m.homeTeam === "object"
+                        ? m.homeTeam
+                        : teamsMap.get(m.homeTeamId);
+                    const awayTeamObj =
+                      typeof m.awayTeam === "object"
+                        ? m.awayTeam
+                        : teamsMap.get(m.awayTeamId);
+
+                    return (
+                      <MatchCard
+                        key={m.id}
+                        match={m}
+                        homeTeam={homeTeamObj}
+                        awayTeam={awayTeamObj}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : !competitionId && viewMode === "status" ? (
           <div className="space-y-8">
             {groupedMatches.map((group) => (

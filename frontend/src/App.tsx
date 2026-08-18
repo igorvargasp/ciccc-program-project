@@ -152,7 +152,7 @@ export default function App() {
           <Route path="home" element={<Home />} />
           <Route path="matches" element={<Matches />} />
           <Route path="matches/:id" element={<MatchDetail />} />
-          <Route path="/my-team" element={<MyTeamPage />} />
+          <Route path="my-team" element={<MyTeamPage />} />
           <Route path="competitions" element={<Competitions />} />
           <Route path="competitions/:id" element={<CompetitionDetail />} />
           <Route path="teams" element={<Teams />} />

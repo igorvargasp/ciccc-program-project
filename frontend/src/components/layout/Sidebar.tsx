@@ -26,7 +26,10 @@ const mainNav = [
   { to: "/lineup", icon: Shield, label: "nav.lineup" },
   { to: "/news", icon: Newspaper, label: "nav.news" },
   { to: "/simulator", icon: Swords, label: "nav.simulator" },
-  { to: "/my-team", icon: Star, label: "nav.myteam" },
+];
+
+const specialNav = [
+  { to: "/my-team", icon: Star, label: "nav.myteam", isSpecial: true },
 ];
 
 const bottomNav = [
@@ -39,9 +42,10 @@ interface NavLinkProps {
   icon: LucideIcon;
   label: string;
   exact?: boolean;
+  isSpecial?: boolean;
 }
 
-function NavLink({ to, icon: Icon, label, exact }: NavLinkProps) {
+function NavLink({ to, icon: Icon, label, exact, isSpecial }: NavLinkProps) {
   const { pathname } = useLocation();
   const { t } = useTranslation();
   const active = exact ? pathname === to : pathname.startsWith(to);
@@ -52,11 +56,20 @@ function NavLink({ to, icon: Icon, label, exact }: NavLinkProps) {
       className={cn(
         "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
         active
-          ? "bg-brand text-white shadow-sm"
-          : "text-muted hover:text-foreground hover:bg-surface-2",
+          ? isSpecial
+            ? "bg-amber-500 text-white shadow-sm shadow-amber-500/20"
+            : "bg-brand text-white shadow-sm"
+          : isSpecial
+            ? "text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 font-semibold"
+            : "text-muted hover:text-foreground hover:bg-surface-2",
       )}
     >
-      <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+      <Icon
+        className={cn(
+          "w-[18px] h-[18px] flex-shrink-0",
+          isSpecial && !active && "text-amber-400",
+        )}
+      />
       <span>{t(label, label)}</span>
     </Link>
   );
@@ -76,10 +89,19 @@ export default function Sidebar() {
         </span>
       </div>
 
-      <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-0.5">
-        {mainNav.map((item) => (
-          <NavLink key={item.to} {...item} />
-        ))}
+      <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-0.5 flex flex-col justify-between">
+        <div className="space-y-0.5">
+          {mainNav.map((item) => (
+            <NavLink key={item.to} {...item} />
+          ))}
+        </div>
+
+        {/* Linha divisória e item especial (My Team) */}
+        <div className="pt-3 mt-3 border-t border-edge/12 space-y-0.5">
+          {specialNav.map((item) => (
+            <NavLink key={item.to} {...item} />
+          ))}
+        </div>
       </nav>
 
       <div className="border-t border-edge/12 py-3 px-2 space-y-0.5 flex-shrink-0">
