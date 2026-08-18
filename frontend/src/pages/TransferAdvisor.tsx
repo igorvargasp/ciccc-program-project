@@ -1,6 +1,11 @@
 import { useState } from "react";
 // Importe seus ícones preferidos (lucide-react, por exemplo)
 import { BrainCircuit, Search, Loader2, AlertCircle } from "lucide-react";
+import {
+  apiErrorMessage,
+  suggestTransfers,
+  type TransferSuggestion,
+} from "../api/ai";
 
 export function TransferAdvisorPage({
   teams = [],
@@ -8,7 +13,7 @@ export function TransferAdvisorPage({
   teams: { id: string; name: string }[];
 }) {
   const [selectedTeamId, setSelectedTeamId] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<TransferSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -19,18 +24,9 @@ export function TransferAdvisorPage({
     setError("");
 
     try {
-      const res = await fetch("/api/ai/transfer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamId: selectedTeamId }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Falha ao gerar sugestões");
-
-      setSuggestions(json.data.suggestions);
-    } catch (err: any) {
-      setError(err.message);
+      setSuggestions(await suggestTransfers(selectedTeamId));
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err, "Falha ao gerar sugestões"));
     } finally {
       setLoading(false);
     }

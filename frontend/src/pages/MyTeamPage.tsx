@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTeamsMap } from "@/hooks/useTeamsMap";
 import { useAuth } from "@/context/AuthContext";
 import { getTeam } from "../api/teams";
+import { apiErrorMessage, suggestTransfers } from "../api/ai";
 import {
   Star,
   Calendar,
@@ -184,25 +185,9 @@ export default function MyTeamPage() {
     setTransferError("");
 
     try {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || "";
-      const token = localStorage.getItem("token"); // Resgata o token de autenticação
-
-      const res = await fetch(`${baseUrl}/api/ai/transfer`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}), // Envia o token se existir
-        },
-        body: JSON.stringify({ teamId: String(selectedTeamId) }),
-      });
-
-      const json = await res.json();
-      if (!res.ok)
-        throw new Error(json.message || "Failed to generate suggestions");
-
-      setTransferSuggestions(json.data.suggestions || json.data.stored || []);
-    } catch (err: any) {
-      setTransferError(err.message || "Error fetching AI suggestions");
+      setTransferSuggestions(await suggestTransfers(String(selectedTeamId)));
+    } catch (err: unknown) {
+      setTransferError(apiErrorMessage(err, "Error fetching AI suggestions"));
     } finally {
       setLoadingTransfers(false);
     }
