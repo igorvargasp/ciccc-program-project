@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { and, or, eq, asc, ilike, inArray } from "drizzle-orm";
+import { and, or, eq, asc, desc, ilike, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { db } from "../db/index.js";
 import {
   competitions,
   matches,
+  newsArticles,
   players,
   seasons,
   standings,
@@ -92,6 +93,52 @@ teamsRouter.get(
   }),
 );
 
+// GET /api/teams/:id/players — alias of /squad. The club dashboard asks for
+// this spelling; serving both avoids a 404 that the UI can only read as an
+// empty roster.
+teamsRouter.get(
+  "/:id/players",
+  asyncHandler(async (req, res) => {
+    const squad = await db
+      .select()
+      .from(players)
+      .where(eq(players.teamId, req.params.id))
+      .orderBy(asc(players.shirtNumber));
+
+    res.json({ data: squad });
+  }),
+);
+
+// GET /api/teams/:id/news — club news. Articles are linked to a team when the
+// ingest could resolve one; the rest are league-wide, so fall back to recent
+// general news rather than leaving the club dashboard blank.
+teamsRouter.get(
+  "/:id/news",
+  asyncHandler(async (req, res) => {
+    const limit = Math.min(Number(req.query.limit) || 6, 50);
+
+    const clubNews = await db
+      .select()
+      .from(newsArticles)
+      .where(eq(newsArticles.teamId, req.params.id))
+      .orderBy(desc(newsArticles.publishedAt))
+      .limit(limit);
+
+    if (clubNews.length) {
+      res.json({ data: clubNews });
+      return;
+    }
+
+    const recent = await db
+      .select()
+      .from(newsArticles)
+      .orderBy(desc(newsArticles.publishedAt))
+      .limit(limit);
+
+    res.json({ data: recent });
+  }),
+);
+
 // GET /api/teams/:id/matches — matches filtered by status
 teamsRouter.get(
   "/:id/matches",
@@ -140,10 +187,20 @@ teamsRouter.get(
           shortName: awayTeamAlias.shortName,
           crestUrl: awayTeamAlias.crestUrl,
         },
+        // Without this the club dashboard can only show a placeholder for the
+        // competition a fixture belongs to.
+        competition: {
+          id: competitions.id,
+          name: competitions.name,
+          logoUrl: competitions.logoUrl,
+        },
+        season: { id: seasons.id, label: seasons.label },
       })
       .from(matches)
       .innerJoin(homeTeamAlias, eq(matches.homeTeamId, homeTeamAlias.id))
       .innerJoin(awayTeamAlias, eq(matches.awayTeamId, awayTeamAlias.id))
+      .leftJoin(seasons, eq(matches.seasonId, seasons.id))
+      .leftJoin(competitions, eq(seasons.competitionId, competitions.id))
       .where(and(...filters))
       .orderBy(asc(matches.kickoffAt))
       .limit(50);

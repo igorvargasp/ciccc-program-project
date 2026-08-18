@@ -337,10 +337,31 @@ export default function Simulator() {
         ) : (
           <div className="space-y-3">
             {simulations.map((sim: any) => {
-              // Now we find the match using 'allMatches' instead of just 'scheduledMatches'
+              // The API now sends both clubs with the simulation; the local
+              // match list is only a fallback for rows saved before that.
               const m = allMatches?.find((x: any) => x.id === sim.matchId);
-              const home = m ? teamsMap.get(m.homeTeamId) : undefined;
-              const away = m ? teamsMap.get(m.awayTeamId) : undefined;
+              const home =
+                sim.homeTeam ?? (m ? teamsMap.get(m.homeTeamId) : undefined);
+              const away =
+                sim.awayTeam ?? (m ? teamsMap.get(m.awayTeamId) : undefined);
+
+              const crest = (team: any) =>
+                team?.crestUrl || team?.crest || team?.logo;
+
+              const badge = (team: any, label: string) =>
+                crest(team) ? (
+                  <img
+                    src={crest(team)}
+                    alt={team?.name || label}
+                    className="w-7 h-7 object-contain flex-shrink-0 drop-shadow"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-md bg-surface-2 border border-edge/20 flex items-center justify-center text-[10px] font-bold text-muted flex-shrink-0">
+                    {(team?.shortName || team?.name || label)
+                      .slice(0, 3)
+                      .toUpperCase()}
+                  </div>
+                );
 
               return (
                 <div
@@ -355,10 +376,12 @@ export default function Simulator() {
                   }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
+                    {badge(home, "?")}
                     <span className="text-sm font-semibold text-foreground truncate">
                       {home?.shortName || home?.name || "?"} vs{" "}
                       {away?.shortName || away?.name || "?"}
                     </span>
+                    {badge(away, "?")}
                   </div>
                   <div className="text-xl font-black text-foreground flex-shrink-0">
                     {sim.simulatedHomeScore ?? 0} –{" "}

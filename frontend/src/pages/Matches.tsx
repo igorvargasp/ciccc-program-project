@@ -7,7 +7,15 @@ import MatchCard from "@/components/MatchCard";
 import CompetitionPills from "@/components/CompetitionPills";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import EmptyState from "@/components/ui/EmptyState";
-import { Star, Layers, Trophy, Radio, Clock, History } from "lucide-react";
+import {
+  Star,
+  Layers,
+  Trophy,
+  Radio,
+  Clock,
+  History,
+  ChevronRight,
+} from "lucide-react";
 import { useTeamsMap } from "@/hooks/useTeamsMap";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -148,26 +156,67 @@ export default function Matches() {
     }
   }, [viewMode]);
 
+  /**
+   * Group by competition and show a single round of each: the next one when
+   * looking at fixtures, the most recent one when looking at results. Showing
+   * every round of every competition at once buried the round the user
+   * actually came for.
+   *
+   * The API already sorts scheduled ascending and everything else descending,
+   * so the first match of a group is the relevant round in both cases — more
+   * dependable than min/max over matchday, which competitions number
+   * inconsistently.
+   */
   const groupMatchesByCompetition = (matchList: any[]) => {
-    const groups: {
-      [key: string]: { competitionName: string; matches: any[] };
-    } = {};
+    const groups = new Map<
+      string,
+      { id: string; competitionName: string; logoUrl?: string; matches: any[] }
+    >();
 
     matchList.forEach((m) => {
-      const compId = m.competitionId || m.competition?.id || "other";
-      const compName =
-        m.competition?.name || m.competitionName || "Outras Competições";
-
-      if (!groups[compId]) {
-        groups[compId] = {
-          competitionName: compName,
+      const compId = String(m.competition?.id || m.competitionId || "other");
+      if (!groups.has(compId)) {
+        groups.set(compId, {
+          id: compId,
+          competitionName:
+            m.competition?.name || m.competitionName || "Outras Competições",
+          logoUrl: m.competition?.logoUrl,
           matches: [],
-        };
+        });
       }
-      groups[compId].matches.push(m);
+      groups.get(compId)!.matches.push(m);
     });
 
-    return Object.values(groups);
+    return [...groups.values()].map((g) => {
+      // Take the round most of the nearest fixtures belong to, not simply the
+      // earliest one. Postponed games sit out of sequence — Brasileirão has a
+      // rescheduled round 4 kicking off before round 21 — and keying off the
+      // first match would show that single stray game as "the next round".
+      const window = g.matches.slice(0, 10);
+      const tally = new Map<number, number>();
+      for (const m of window) {
+        if (typeof m.matchday === "number") {
+          tally.set(m.matchday, (tally.get(m.matchday) ?? 0) + 1);
+        }
+      }
+      const round =
+        [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+      // Narrow to one round only for fixtures and results. Live matches are
+      // few and the whole point is seeing all of them, so never hide one
+      // because it belongs to a different round.
+      const narrow = status !== "live" && round !== null;
+      const shown = narrow
+        ? g.matches.filter((m) => m.matchday === round)
+        : g.matches;
+
+      return {
+        ...g,
+        round: narrow ? round : null,
+        shown,
+        total: g.matches.length,
+      };
+    });
   };
 
   const groupedMatches =
@@ -496,17 +545,46 @@ export default function Matches() {
           />
         ) : !competitionId && viewMode === "status" ? (
           <div className="space-y-8">
-            {groupedMatches.map((group, idx) => (
-              <div key={idx} className="space-y-3">
-                <div className="flex items-center gap-2 border-b border-[#414755]/20 pb-2 pt-2">
-                  <Trophy className="w-4 h-4 text-[#00d2fd]" />
-                  <h4 className="text-sm font-black text-foreground uppercase tracking-wider">
-                    {group.competitionName}
-                  </h4>
+            {groupedMatches.map((group) => (
+              <div key={group.id} className="space-y-3">
+                <div className="flex items-center justify-between gap-2 border-b border-[#414755]/20 pb-2 pt-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {group.logoUrl ? (
+                      <img
+                        src={group.logoUrl}
+                        alt={group.competitionName}
+                        className="w-4 h-4 object-contain flex-shrink-0"
+                      />
+                    ) : (
+                      <Trophy className="w-4 h-4 text-[#00d2fd] flex-shrink-0" />
+                    )}
+                    <h4 className="text-sm font-black text-foreground uppercase tracking-wider truncate">
+                      {group.competitionName}
+                    </h4>
+                    {group.round !== null && (
+                      <span className="text-xs font-semibold text-[#00d2fd] flex-shrink-0">
+                        · {t("matches.round", "Rodada")} {group.round}
+                      </span>
+                    )}
+                  </div>
+
+                  {group.total > group.shown.length && (
+                    <button
+                      onClick={() => {
+                        setCompetitionId(group.id);
+                        setMatchday(undefined);
+                      }}
+                      className="text-xs font-semibold text-muted hover:text-[#00d2fd] flex items-center gap-1 flex-shrink-0 transition-colors"
+                    >
+                      {t("common.seeAll", "Ver mais")} (
+                      {group.total - group.shown.length})
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {group.matches.map((m) => {
+                  {group.shown.map((m) => {
                     const homeTeamObj =
                       typeof m.homeTeam === "object"
                         ? m.homeTeam

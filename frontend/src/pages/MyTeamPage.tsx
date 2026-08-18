@@ -218,6 +218,14 @@ export default function MyTeamPage() {
     (awayTeamFromMap as any)?.crestUrl ||
     (awayTeamFromMap as any)?.logo;
 
+  // Our API names this `kickoffAt`; `utcDate` is football-data.org's spelling
+  // and never arrives, which is why no date was rendering.
+  const kickoffRaw = displayMatch?.kickoffAt || displayMatch?.utcDate;
+  const kickoff = kickoffRaw ? new Date(kickoffRaw) : null;
+
+  const competitionName =
+    displayMatch?.competition?.name || displayMatch?.competitionName || null;
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* 1. Main Team Header */}
@@ -321,10 +329,14 @@ export default function MyTeamPage() {
                   {liveMatch ? "LIVE" : "VS"}
                 </span>
                 <span className="text-xs font-semibold text-muted">
-                  {displayMatch.utcDate
-                    ? new Date(displayMatch.utcDate).toLocaleDateString()
-                    : "Coming soon"}
+                  {kickoff ? kickoff.toLocaleDateString() : "Coming soon"}
                 </span>
+                {competitionName && (
+                  <span className="text-[10px] text-muted block mt-0.5 max-w-[140px] truncate">
+                    {competitionName}
+                    {displayMatch.matchday ? ` · R${displayMatch.matchday}` : ""}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-3 flex-1 text-left">
@@ -464,26 +476,39 @@ export default function MyTeamPage() {
 
         {Array.isArray(teamStandings) && teamStandings.length > 0 ? (
           <div className="space-y-3">
-            {teamStandings.slice(0, 2).map((standing: any, idx: number) => (
-              <div
-                key={idx}
-                className="bg-surface-2/50 border border-edge/20 rounded-xl p-4 flex items-center justify-between text-sm"
-              >
-                <div>
-                  <span className="font-bold text-foreground block">
-                    {standing.competition?.name || "Competition"}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {standing.label || "Current season"}
-                  </span>
+            {teamStandings.slice(0, 2).map((standing: any, idx: number) => {
+              // The endpoint returns the whole league table per competition;
+              // our row is the one belonging to this club.
+              const row = standing.table?.find(
+                (r: any) => String(r.team?.id) === String(selectedTeamId),
+              );
+              return (
+                <div
+                  key={standing.seasonId || idx}
+                  className="bg-surface-2/50 border border-edge/20 rounded-xl p-4 flex items-center justify-between text-sm"
+                >
+                  <div>
+                    <span className="font-bold text-foreground block">
+                      {standing.competition?.name || "Competition"}
+                    </span>
+                    <span className="text-xs text-muted">
+                      {standing.label || "Current season"}
+                    </span>
+                  </div>
+                  <div className="text-right space-y-0.5">
+                    <span className="text-sm font-black text-brand block">
+                      {row?.position ? `${row.position}º` : "—"}
+                    </span>
+                    {row && (
+                      <span className="text-[11px] text-muted block">
+                        {row.points} pts · {row.played} J · {row.won}V {row.drawn}E{" "}
+                        {row.lost}D
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-xs font-semibold text-brand block">
-                    Position: {standing.position || "N/A"}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="bg-surface-2/40 border border-edge/20 rounded-xl p-6 text-center text-xs text-muted italic">

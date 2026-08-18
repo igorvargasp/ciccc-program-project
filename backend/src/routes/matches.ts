@@ -2,7 +2,8 @@ import { Router } from "express";
 import { and, asc, desc, eq, gte, inArray, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
-import { matches, matchEvents, seasons, competitions } from "../db/schema.js";
+import { alias } from "drizzle-orm/pg-core";
+import { matches, matchEvents, seasons, competitions, teams } from "../db/schema.js";
 import { asyncHandler } from "../lib/async-handler.js";
 import { notFound } from "../lib/http-error.js";
 
@@ -51,14 +52,52 @@ matchesRouter.get(
         ? asc(matches.kickoffAt)
         : desc(matches.kickoffAt);
 
+    // Competition and both clubs come back with every match: the calendar
+    // groups by competition and renders crests, and without them the UI can
+    // only fall back to placeholder names.
+    const homeTeamAlias = alias(teams, "home_team");
+    const awayTeamAlias = alias(teams, "away_team");
+
     const rows = await db
-      .select()
+      .select({
+        match: matches,
+        competition: {
+          id: competitions.id,
+          name: competitions.name,
+          logoUrl: competitions.logoUrl,
+        },
+        season: { id: seasons.id, label: seasons.label },
+        homeTeam: {
+          id: homeTeamAlias.id,
+          name: homeTeamAlias.name,
+          shortName: homeTeamAlias.shortName,
+          crestUrl: homeTeamAlias.crestUrl,
+        },
+        awayTeam: {
+          id: awayTeamAlias.id,
+          name: awayTeamAlias.name,
+          shortName: awayTeamAlias.shortName,
+          crestUrl: awayTeamAlias.crestUrl,
+        },
+      })
       .from(matches)
+      .leftJoin(seasons, eq(matches.seasonId, seasons.id))
+      .leftJoin(competitions, eq(seasons.competitionId, competitions.id))
+      .leftJoin(homeTeamAlias, eq(matches.homeTeamId, homeTeamAlias.id))
+      .leftJoin(awayTeamAlias, eq(matches.awayTeamId, awayTeamAlias.id))
       .where(filters.length ? and(...filters) : undefined)
       .orderBy(orderBy)
       .limit(q.limit);
 
-    res.json({ data: rows });
+    res.json({
+      data: rows.map((r) => ({
+        ...r.match,
+        competition: r.competition,
+        season: r.season,
+        homeTeam: r.homeTeam,
+        awayTeam: r.awayTeam,
+      })),
+    });
   }),
 );
 

@@ -174,8 +174,22 @@ async function upsertMatch(m: FdMatch, seasonId: string, homeId: string, awayId:
   return row;
 }
 
-/** Upsert a whole match graph (teams + match) under a known season. */
+/**
+ * Cup draws are published before the teams are known: knockout fixtures come
+ * back with `{ id: null, name: null }` on both sides until the previous round
+ * finishes. Those aren't teams and can't be stored as such.
+ */
+function isPlaceholderTeam(t: FdTeam | undefined): boolean {
+  return !t || t.id == null || !t.name;
+}
+
+/**
+ * Upsert a whole match graph (teams + match) under a known season.
+ * Returns null for fixtures whose teams aren't decided yet.
+ */
 async function persistMatch(m: FdMatch, seasonId: string) {
+  if (isPlaceholderTeam(m.homeTeam) || isPlaceholderTeam(m.awayTeam)) return null;
+
   const [homeId, awayId] = await Promise.all([upsertTeam(m.homeTeam), upsertTeam(m.awayTeam)]);
   return upsertMatch(m, seasonId, homeId, awayId);
 }
@@ -191,8 +205,11 @@ export async function syncCompetitionMatches(code: string): Promise<number> {
   const competitionId = await upsertCompetition(first.competition);
   const seasonId = await upsertSeason(competitionId, first.season);
 
-  for (const m of data.matches) await persistMatch(m, seasonId);
-  return data.matches.length;
+  let stored = 0;
+  for (const m of data.matches) {
+    if (await persistMatch(m, seasonId)) stored += 1;
+  }
+  return stored;
 }
 
 /** Standings table for one competition. */
@@ -300,7 +317,9 @@ export async function pollLiveMatches(): Promise<number> {
     const competitionId = await upsertCompetition(m.competition);
     const seasonId = await upsertSeason(competitionId, m.season);
     const row = await persistMatch(m, seasonId);
-    emitTo(room.match(row.id), RT.MATCH_UPDATE, row);
+    // A live match always has both teams, but persistMatch can decline a
+    // fixture, and dereferencing null here would kill the whole poll.
+    if (row) emitTo(room.match(row.id), RT.MATCH_UPDATE, row);
   }
   return data.matches.length;
 }
