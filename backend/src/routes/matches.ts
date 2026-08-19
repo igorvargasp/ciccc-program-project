@@ -3,7 +3,14 @@ import { and, asc, desc, eq, gte, inArray, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
 import { alias } from "drizzle-orm/pg-core";
-import { matches, matchEvents, seasons, competitions, teams } from "../db/schema.js";
+import {
+  matches,
+  matchEvents,
+  matchStats,
+  seasons,
+  competitions,
+  teams,
+} from "../db/schema.js";
 import { asyncHandler } from "../lib/async-handler.js";
 import { notFound } from "../lib/http-error.js";
 
@@ -105,6 +112,11 @@ matchesRouter.get(
 matchesRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
+    // The detail view renders both clubs with their crests, so join them here
+    // as the list endpoint does — otherwise the match report has no teams.
+    const homeTeamAlias = alias(teams, "home_team");
+    const awayTeamAlias = alias(teams, "away_team");
+
     const [match] = await db
       .select({
         match: matches,
@@ -113,26 +125,52 @@ matchesRouter.get(
           name: competitions.name,
           logoUrl: competitions.logoUrl,
         },
+        season: { id: seasons.id, label: seasons.label },
+        homeTeam: {
+          id: homeTeamAlias.id,
+          name: homeTeamAlias.name,
+          shortName: homeTeamAlias.shortName,
+          crestUrl: homeTeamAlias.crestUrl,
+        },
+        awayTeam: {
+          id: awayTeamAlias.id,
+          name: awayTeamAlias.name,
+          shortName: awayTeamAlias.shortName,
+          crestUrl: awayTeamAlias.crestUrl,
+        },
       })
       .from(matches)
       .leftJoin(seasons, eq(matches.seasonId, seasons.id))
       .leftJoin(competitions, eq(seasons.competitionId, competitions.id))
+      .leftJoin(homeTeamAlias, eq(matches.homeTeamId, homeTeamAlias.id))
+      .leftJoin(awayTeamAlias, eq(matches.awayTeamId, awayTeamAlias.id))
       .where(eq(matches.id, req.params.id))
       .limit(1);
 
     if (!match) throw notFound("Match");
 
-    const events = await db
-      .select()
-      .from(matchEvents)
-      .where(eq(matchEvents.matchId, match.match.id))
-      .orderBy(asc(matchEvents.minute));
+    const [events, stats] = await Promise.all([
+      db
+        .select()
+        .from(matchEvents)
+        .where(eq(matchEvents.matchId, match.match.id))
+        .orderBy(asc(matchEvents.minute)),
+      db
+        .select({ stat: matchStats.stat, home: matchStats.home, away: matchStats.away })
+        .from(matchStats)
+        .where(eq(matchStats.matchId, match.match.id))
+        .orderBy(asc(matchStats.stat)),
+    ]);
 
     res.json({
       data: {
         ...match.match,
         competition: match.competition,
+        season: match.season,
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
         events,
+        stats,
       },
     });
   }),

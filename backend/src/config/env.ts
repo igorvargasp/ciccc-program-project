@@ -51,6 +51,9 @@ const envSchema = z.object({
   // Cron for the player-photo backfill. Photos change rarely, so this is slow
   // by design — it mainly exists to pick up newly synced squad members.
   PLAYER_PHOTO_CRON: z.string().default("30 4 * * *"),
+  // Cron for match reports (goals, cards, stats) on recently finished games.
+  // Runs after the daily refresh so results have settled first.
+  MATCH_EVENTS_CRON: z.string().default("0 5 * * *"),
 });
 
 const parsed = envSchema.safeParse(process.env);

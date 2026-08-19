@@ -108,3 +108,83 @@ export async function lookupAllPlayers(teamId: string): Promise<TsdbPlayer[]> {
   );
   return data.player ?? [];
 }
+
+// ─────────────────────────── Match events ───────────────────────────
+
+export interface TsdbEvent {
+  idEvent: string;
+  strEvent: string;
+  strLeague?: string | null;
+  strHomeTeam?: string | null;
+  strAwayTeam?: string | null;
+  intHomeScore?: string | null;
+  intAwayScore?: string | null;
+  dateEvent?: string | null;
+}
+
+interface TsdbEventsDayResponse {
+  events: TsdbEvent[] | null;
+}
+
+export interface TsdbTimelineEntry {
+  idTimeline: string;
+  idEvent: string;
+  /** "Goal" | "Card" | "subst" … */
+  strTimeline: string;
+  /** e.g. "Normal Goal", "Yellow Card", "Red Card" */
+  strTimelineDetail?: string | null;
+  /** "Yes" when the event belongs to the home side. */
+  strHome?: string | null;
+  strPlayer?: string | null;
+  strAssist?: string | null;
+  intTime?: string | null;
+  strTeam?: string | null;
+}
+
+interface TsdbTimelineResponse {
+  timeline: TsdbTimelineEntry[] | null;
+}
+
+export interface TsdbEventStat {
+  strStat: string;
+  intHome?: string | null;
+  intAway?: string | null;
+}
+
+interface TsdbEventStatsResponse {
+  eventstats: TsdbEventStat[] | null;
+}
+
+/**
+ * Every football fixture on a given day (YYYY-MM-DD) in one request.
+ *
+ * This is what makes event syncing affordable: a single call covers ~100
+ * fixtures, so matching our own finished matches costs one request per day
+ * rather than one per match.
+ */
+export async function eventsOnDay(date: string): Promise<TsdbEvent[]> {
+  const data = await request<TsdbEventsDayResponse>(
+    `/eventsday.php?d=${encodeURIComponent(date)}&s=Soccer`,
+  );
+  return data.events ?? [];
+}
+
+/** Goals, cards and substitutions for one fixture. Empty for minor leagues. */
+export async function lookupTimeline(
+  eventId: string,
+): Promise<TsdbTimelineEntry[]> {
+  const data = await request<TsdbTimelineResponse>(
+    `/lookuptimeline.php?id=${encodeURIComponent(eventId)}`,
+  );
+  return data.timeline ?? [];
+}
+
+/** Team statistics (shots, fouls, corners…) for one fixture. */
+export async function lookupEventStats(
+  eventId: string,
+): Promise<TsdbEventStat[]> {
+  const data = await request<TsdbEventStatsResponse>(
+    `/lookupeventstats.php?id=${encodeURIComponent(eventId)}`,
+  );
+  return data.eventstats ?? [];
+}

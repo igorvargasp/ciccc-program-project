@@ -15,7 +15,8 @@
     "db:studio": "drizzle-kit studio",
     "seed:news": "tsx scripts/seed-news.ts",
     "seed:competitions": "tsx scripts/seed-competitions.ts",
-    "sync:photos": "tsx scripts/sync-player-photos.ts"
+    "sync:photos": "tsx scripts/sync-player-photos.ts",
+    "sync:events": "tsx scripts/sync-match-events.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

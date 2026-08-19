@@ -6,6 +6,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  real,
   text,
   timestamp,
   unique,
@@ -189,7 +190,38 @@ export const matchEvents = pgTable("match_events", {
   type: varchar("type", { length: 16 }).notNull(), // goal | assist | yellow | red | sub
   minute: integer("minute"),
   detail: varchar("detail", { length: 160 }),
+  // Events come from TheSportsDB, whose players are unrelated to ours, so the
+  // name is stored directly: player_id is only set when we can match one, and
+  // the report must still be able to say who scored when we can't.
+  playerName: varchar("player_name", { length: 160 }),
+  assistName: varchar("assist_name", { length: 160 }),
+  /** Which side the event belongs to, so the report can place it. */
+  isHome: boolean("is_home"),
+  /** Source id, so re-syncing a match doesn't duplicate its events. */
+  externalApiId: varchar("external_api_id", { length: 64 }).unique(),
 });
+
+/**
+ * Per-match team statistics (shots, fouls, corners…). Kept as rows rather than
+ * columns because the provider's stat list varies by competition and grows.
+ */
+export const matchStats = pgTable(
+  "match_stats",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => matches.id, { onDelete: "cascade" }),
+    stat: varchar("stat", { length: 64 }).notNull(),
+    // Not integers: alongside counts like shots and corners the provider sends
+    // fractional metrics such as expected_goals (0.43).
+    home: real("home"),
+    away: real("away"),
+  },
+  (t) => ({
+    uniqPerStat: unique("match_stats_match_id_stat_unique").on(t.matchId, t.stat),
+  }),
+);
 
 export const standings = pgTable(
   "standings",

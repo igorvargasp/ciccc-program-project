@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { env } from "./config/env.js";
 import { buildDailyDigest } from "./services/digest.js";
 import { footballDataEnabled, trackedCompetitions } from "./services/football-data.js";
+import { syncMatchEvents } from "./services/match-events.js";
 import { backfillPlayerPhotos } from "./services/player-photos.js";
 import { pollLiveMatches, syncAll, syncFixtures } from "./services/sync.js";
 
@@ -40,6 +41,19 @@ export function startScheduler(): void {
   cron.schedule(env.DAILY_DIGEST_CRON, run("daily", async () => {
     await syncAll();
     await buildDailyDigest();
+  }));
+
+  // Match reports for recently finished fixtures. Goals and cards aren't in
+  // football-data.org's free plan, so they come from TheSportsDB, matched on
+  // date and clubs. Runs shortly after the daily sync, once results have
+  // settled.
+  cron.schedule(env.MATCH_EVENTS_CRON, run("events", async () => {
+    const r = await syncMatchEvents();
+    if (r.matched) {
+      console.log(
+        `[events] ${r.matched}/${r.matchesConsidered} matched — ${r.eventsStored} events, ${r.statsStored} stats`,
+      );
+    }
   }));
 
   // Player photos from TheSportsDB, in bounded batches. Runs after the daily
