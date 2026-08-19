@@ -19,7 +19,7 @@ import {
   BellRing,
   Star,
 } from "lucide-react";
-import { getMatch } from "../api/matches";
+import { getMatch, getMatchContext } from "../api/matches";
 import { getTeam } from "../api/teams";
 import { getCompetitionStandings } from "../api/competitions";
 import { PageSpinner } from "../components/ui/Spinner";
@@ -82,6 +82,16 @@ export default function MatchDetail() {
     queryKey: ["standings", competitionId],
     queryFn: () => getCompetitionStandings(competitionId!),
     enabled: !!competitionId,
+  });
+
+  // Form, head-to-head and league position, all derived from matches we
+  // already store — so an upcoming fixture has something to show even though
+  // there is nothing to report on yet.
+  const { data: context } = useQuery({
+    queryKey: ["match-context", id],
+    queryFn: () => getMatchContext(id!),
+    enabled: !!id,
+    staleTime: 5 * 60_000,
   });
 
   if (isLoading) return <PageSpinner />;
@@ -372,28 +382,79 @@ export default function MatchDetail() {
               {match.events.map((ev: any, index: number) => (
                 <li
                   key={ev.id || index}
-                  className="flex items-start gap-3 relative text-xs sm:text-sm"
+                  className={cn(
+                    "flex items-start gap-3 relative text-xs sm:text-sm",
+                    // Nudge each event toward the club it belongs to, so the
+                    // timeline reads as two columns rather than one list.
+                    ev.isHome === false && "sm:ml-8",
+                  )}
                 >
-                  <span className="absolute -left-[23px] top-1 w-2.5 h-2.5 rounded-full bg-[#00d2fd] ring-4 ring-surface" />
+                  <span
+                    className={cn(
+                      "absolute -left-[23px] top-1 w-2.5 h-2.5 rounded-full ring-4 ring-surface",
+                      ev.type === "goal" ? "bg-emerald-400" : "bg-[#00d2fd]",
+                    )}
+                  />
                   <span className="font-bold text-muted w-8 sm:w-10 flex-shrink-0 pt-0.5">
                     {ev.minute != null ? `${ev.minute}'` : "—"}
                   </span>
                   <span className="text-base">
                     {EVENT_ICONS[ev.type] ?? "•"}
                   </span>
+
+                  {ev.playerPhotoUrl && (
+                    <img
+                      src={ev.playerPhotoUrl}
+                      alt={ev.playerName ?? ""}
+                      className="w-7 h-7 rounded-full object-cover bg-surface-2 flex-shrink-0"
+                    />
+                  )}
+
                   <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        "font-semibold capitalize truncate",
-                        ev.type === "goal" && "text-emerald-400 font-bold",
-                      )}
-                    >
-                      {ev.type === "goal" ? t("matchDetail.goal") : ev.type}
-                    </p>
-                    {ev.detail && (
+                    {ev.type === "sub" ? (
+                      // A substitution has no scorer and no assist: the two
+                      // names are the player leaving and the one arriving.
+                      <p className="truncate">
+                        <span className="text-emerald-400 font-semibold">
+                          ▲ {ev.assistName ?? "?"}
+                        </span>
+                        <span className="text-muted"> · </span>
+                        <span className="text-red-400/80">
+                          ▼ {ev.playerName ?? "?"}
+                        </span>
+                      </p>
+                    ) : (
+                      <>
+                        <p
+                          className={cn(
+                            "font-semibold truncate",
+                            ev.type === "goal" &&
+                              "text-emerald-400 font-bold",
+                          )}
+                        >
+                          {ev.playerName ??
+                            (ev.type === "goal"
+                              ? t("matchDetail.goal")
+                              : ev.type)}
+                        </p>
+                        {ev.assistName && (
+                          <p className="text-xs text-muted truncate">
+                            {t("matchDetail.assist", "assistência")}:{" "}
+                            {ev.assistName}
+                          </p>
+                        )}
+                      </>
+                    )}
+                    {ev.detail && !ev.playerName && (
                       <p className="text-xs text-muted truncate">{ev.detail}</p>
                     )}
                   </div>
+
+                  <span className="text-[10px] text-muted flex-shrink-0 pt-1 hidden sm:block">
+                    {ev.isHome
+                      ? (homeTeam?.shortName ?? homeTeam?.name ?? "")
+                      : (awayTeam?.shortName ?? awayTeam?.name ?? "")}
+                  </span>
                 </li>
               ))}
             </ol>
@@ -410,13 +471,150 @@ export default function MatchDetail() {
           )}
         </div>
       ) : (
-        <div className="bg-surface border border-edge/12 rounded-2xl p-4 sm:p-5 shadow-md">
-          <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+        <div className="bg-surface border border-edge/12 rounded-2xl p-4 sm:p-5 shadow-md space-y-4">
+          <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em] flex items-center gap-2">
             <span>⏳</span> {t("matchDetail.upcomingExpectations")}
           </h3>
-          <p className="text-xs text-muted">
-            {t("matchDetail.upcomingDescription")}
-          </p>
+
+          {context ? (
+            <div className="space-y-4">
+              {/* Forma recente */}
+              <div className="grid grid-cols-2 gap-3">
+                {(
+                  [
+                    ["home", homeTeam, context.form.home],
+                    ["away", awayTeam, context.form.away],
+                  ] as const
+                ).map(([side, team, form]) => (
+                  <div
+                    key={side}
+                    className="bg-surface-2/60 border border-edge/10 rounded-xl p-3 space-y-2"
+                  >
+                    <p className="text-[11px] font-bold text-muted uppercase tracking-wider truncate">
+                      {team?.shortName || team?.name || side}
+                    </p>
+                    <div className="flex gap-1">
+                      {form.length ? (
+                        form.map((f: any, i: number) => (
+                          <span
+                            key={i}
+                            title={`${f.scored ?? "?"}–${f.conceded ?? "?"}`}
+                            className={cn(
+                              "w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center",
+                              f.result === "W" && "bg-emerald-500/20 text-emerald-400",
+                              f.result === "D" && "bg-amber-500/20 text-amber-400",
+                              f.result === "L" && "bg-red-500/20 text-red-400",
+                              !f.result && "bg-surface text-muted",
+                            )}
+                          >
+                            {f.result ?? "?"}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted italic">
+                          {t("common.noData")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Confronto direto */}
+              {context.headToHead.matches.length > 0 && (
+                <div className="bg-surface-2/60 border border-edge/10 rounded-xl p-3">
+                  <p className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">
+                    {t("matchDetail.headToHead", "Confronto direto")} ·{" "}
+                    {context.headToHead.matches.length}
+                  </p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="font-black text-emerald-400">
+                      {context.headToHead.homeWins}
+                    </span>
+                    <span className="text-muted text-xs">
+                      {t("matchDetail.draws", "empates")}{" "}
+                      <strong className="text-foreground">
+                        {context.headToHead.draws}
+                      </strong>
+                    </span>
+                    <span className="font-black text-red-400">
+                      {context.headToHead.awayWins}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Posição na tabela */}
+              {(context.standings.home || context.standings.away) && (
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  {([context.standings.home, context.standings.away] as const).map(
+                    (s: any, i: number) =>
+                      s ? (
+                        <div
+                          key={i}
+                          className="bg-surface-2/60 border border-edge/10 rounded-xl p-3"
+                        >
+                          <span className="text-lg font-black text-[#00d2fd]">
+                            {s.position}º
+                          </span>
+                          <span className="text-muted ml-2">
+                            {s.points} pts · {s.played} J
+                          </span>
+                        </div>
+                      ) : (
+                        <div key={i} />
+                      ),
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted">
+              {t("matchDetail.upcomingDescription")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Estatísticas da partida (remates, posse, faltas…) */}
+      {match.stats && match.stats.length > 0 && (
+        <div className="bg-surface border border-edge/12 rounded-2xl p-4 sm:p-5 shadow-md space-y-3">
+          <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em] flex items-center gap-2">
+            <span>📊</span> {t("matchDetail.matchStats", "Estatísticas")}
+          </h3>
+          <div className="space-y-2">
+            {match.stats.map((s: any) => {
+              const home = Number(s.home ?? 0);
+              const away = Number(s.away ?? 0);
+              const total = home + away;
+              const homePct = total > 0 ? (home / total) * 100 : 50;
+              return (
+                <div key={s.stat} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-foreground w-10">
+                      {s.home ?? "—"}
+                    </span>
+                    <span className="text-muted text-[11px] truncate px-2">
+                      {s.stat.replace(/_/g, " ")}
+                    </span>
+                    <span className="font-bold text-foreground w-10 text-right">
+                      {s.away ?? "—"}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden flex">
+                    <div
+                      className="bg-[#00d2fd]"
+                      style={{ width: `${homePct}%` }}
+                    />
+                    <div
+                      className="bg-amber-400/70"
+                      style={{ width: `${100 - homePct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

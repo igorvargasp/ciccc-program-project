@@ -129,17 +129,40 @@ export type MatchEventType = 'goal' | 'assist' | 'yellow' | 'red' | 'sub';
 
 export interface MatchEvent {
   id: string;
-  matchId: string;
-  playerId?: string;
+  matchId?: string;
+  playerId?: string | null;
   type: MatchEventType;
-  minute?: number;
-  detail?: string;
+  minute?: number | null;
+  detail?: string | null;
+  /**
+   * Names come straight from the event provider, which shares no identifiers
+   * with our squads — playerId is only set when one could be matched, so the
+   * name is what the report can always rely on.
+   */
+  playerName?: string | null;
+  /** Assist provider for a goal; for a substitution, the player coming ON. */
+  assistName?: string | null;
+  assistPlayerId?: string | null;
+  /** Which side the event belongs to. */
+  isHome?: boolean | null;
+  playerPhotoUrl?: string | null;
+}
+
+/** One team-vs-team statistic for a match (shots, fouls, possession…). */
+export interface MatchStat {
+  stat: string;
+  home: number | null;
+  away: number | null;
 }
 
 /** GET /matches/:id — the match row plus its competition and event timeline. */
 export interface MatchDetail extends Match {
   competition?: Pick<Competition, 'id' | 'name' | 'logoUrl'> | null;
+  season?: { id: string; label: string } | null;
+  homeTeam?: Pick<Team, 'id' | 'name' | 'shortName' | 'crestUrl'> | null;
+  awayTeam?: Pick<Team, 'id' | 'name' | 'shortName' | 'crestUrl'> | null;
   events: MatchEvent[];
+  stats?: MatchStat[];
 }
 
 // ─────────────────────────── Statistics ───────────────────────────

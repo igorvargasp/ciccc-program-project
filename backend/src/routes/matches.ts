@@ -7,7 +7,9 @@ import {
   matches,
   matchEvents,
   matchStats,
+  players,
   seasons,
+  standings,
   competitions,
   teams,
 } from "../db/schema.js";
@@ -108,6 +110,155 @@ matchesRouter.get(
   }),
 );
 
+/**
+ * GET /api/matches/:id/context — everything worth knowing about a fixture that
+ * isn't the fixture itself: recent form, the sides' head-to-head record, and
+ * where they sit in the table.
+ *
+ * All of it is derived from matches we already hold, so it costs no external
+ * requests and works for upcoming fixtures, where there is nothing to report
+ * on yet.
+ */
+matchesRouter.get(
+  "/:id/context",
+  asyncHandler(async (req, res) => {
+    const [match] = await db
+      .select({
+        id: matches.id,
+        seasonId: matches.seasonId,
+        homeTeamId: matches.homeTeamId,
+        awayTeamId: matches.awayTeamId,
+        kickoffAt: matches.kickoffAt,
+      })
+      .from(matches)
+      .where(eq(matches.id, req.params.id))
+      .limit(1);
+
+    if (!match) throw notFound("Match");
+
+    const { homeTeamId, awayTeamId } = match;
+    const before = match.kickoffAt ?? new Date();
+
+    /** Last finished matches for a team, most recent first. */
+    const recentFor = (teamId: string) =>
+      db
+        .select({
+          id: matches.id,
+          kickoffAt: matches.kickoffAt,
+          homeTeamId: matches.homeTeamId,
+          awayTeamId: matches.awayTeamId,
+          homeScore: matches.homeScore,
+          awayScore: matches.awayScore,
+        })
+        .from(matches)
+        .where(
+          and(
+            eq(matches.status, "finished"),
+            or(eq(matches.homeTeamId, teamId), eq(matches.awayTeamId, teamId)),
+            lte(matches.kickoffAt, before),
+          ),
+        )
+        .orderBy(desc(matches.kickoffAt))
+        .limit(5);
+
+    const [homeRecent, awayRecent, headToHead, table] = await Promise.all([
+      recentFor(homeTeamId),
+      recentFor(awayTeamId),
+      // Meetings between these two, whichever way round they were played.
+      db
+        .select({
+          id: matches.id,
+          kickoffAt: matches.kickoffAt,
+          homeTeamId: matches.homeTeamId,
+          awayTeamId: matches.awayTeamId,
+          homeScore: matches.homeScore,
+          awayScore: matches.awayScore,
+        })
+        .from(matches)
+        .where(
+          and(
+            eq(matches.status, "finished"),
+            or(
+              and(
+                eq(matches.homeTeamId, homeTeamId),
+                eq(matches.awayTeamId, awayTeamId),
+              ),
+              and(
+                eq(matches.homeTeamId, awayTeamId),
+                eq(matches.awayTeamId, homeTeamId),
+              ),
+            ),
+          ),
+        )
+        .orderBy(desc(matches.kickoffAt))
+        .limit(10),
+      match.seasonId
+        ? db
+            .select({
+              teamId: standings.teamId,
+              position: standings.position,
+              points: standings.points,
+              played: standings.played,
+            })
+            .from(standings)
+            .where(
+              and(
+                eq(standings.seasonId, match.seasonId),
+                eq(standings.isSimulated, false),
+                inArray(standings.teamId, [homeTeamId, awayTeamId]),
+              ),
+            )
+        : Promise.resolve([]),
+    ]);
+
+    /** W/D/L from the perspective of `teamId`. */
+    const resultFor = (m: (typeof homeRecent)[number], teamId: string) => {
+      if (m.homeScore == null || m.awayScore == null) return null;
+      const isHome = m.homeTeamId === teamId;
+      const own = isHome ? m.homeScore : m.awayScore;
+      const other = isHome ? m.awayScore : m.homeScore;
+      return own > other ? "W" : own < other ? "L" : "D";
+    };
+
+    const formOf = (rows: typeof homeRecent, teamId: string) =>
+      rows.map((m) => ({
+        matchId: m.id,
+        kickoffAt: m.kickoffAt,
+        result: resultFor(m, teamId),
+        scored: m.homeTeamId === teamId ? m.homeScore : m.awayScore,
+        conceded: m.homeTeamId === teamId ? m.awayScore : m.homeScore,
+      }));
+
+    const h2hSummary = headToHead.reduce(
+      (acc, m) => {
+        const r = resultFor(m, homeTeamId);
+        if (r === "W") acc.homeWins += 1;
+        else if (r === "L") acc.awayWins += 1;
+        else if (r === "D") acc.draws += 1;
+        return acc;
+      },
+      { homeWins: 0, awayWins: 0, draws: 0 },
+    );
+
+    res.json({
+      data: {
+        form: {
+          home: formOf(homeRecent, homeTeamId),
+          away: formOf(awayRecent, awayTeamId),
+        },
+        headToHead: {
+          ...h2hSummary,
+          matches: headToHead,
+        },
+        standings: {
+          home: table.find((r) => r.teamId === homeTeamId) ?? null,
+          away: table.find((r) => r.teamId === awayTeamId) ?? null,
+        },
+      },
+    });
+  }),
+);
+
 // GET /api/matches/:id — match detail with events and competition info
 matchesRouter.get(
   "/:id",
@@ -149,10 +300,26 @@ matchesRouter.get(
 
     if (!match) throw notFound("Match");
 
+    // Join the player through so the report can show a face without a second
+    // round trip per event.
+    const eventPlayer = alias(players, "event_player");
+
     const [events, stats] = await Promise.all([
       db
-        .select()
+        .select({
+          id: matchEvents.id,
+          type: matchEvents.type,
+          minute: matchEvents.minute,
+          detail: matchEvents.detail,
+          playerName: matchEvents.playerName,
+          assistName: matchEvents.assistName,
+          isHome: matchEvents.isHome,
+          playerId: matchEvents.playerId,
+          assistPlayerId: matchEvents.assistPlayerId,
+          playerPhotoUrl: eventPlayer.photoUrl,
+        })
         .from(matchEvents)
+        .leftJoin(eventPlayer, eq(matchEvents.playerId, eventPlayer.id))
         .where(eq(matchEvents.matchId, match.match.id))
         .orderBy(asc(matchEvents.minute)),
       db
