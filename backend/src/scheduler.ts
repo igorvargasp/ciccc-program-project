@@ -2,7 +2,7 @@ import cron from "node-cron";
 import { env } from "./config/env.js";
 import { buildDailyDigest } from "./services/digest.js";
 import { footballDataEnabled, trackedCompetitions } from "./services/football-data.js";
-import { syncMatchEvents } from "./services/match-events.js";
+import { linkEventPlayers, syncMatchEvents } from "./services/match-events.js";
 import { backfillPlayerPhotos } from "./services/player-photos.js";
 import { pollLiveMatches, syncAll, syncFixtures } from "./services/sync.js";
 
@@ -49,9 +49,13 @@ export function startScheduler(): void {
   // settled.
   cron.schedule(env.MATCH_EVENTS_CRON, run("events", async () => {
     const r = await syncMatchEvents();
-    if (r.matched) {
+    // Attach our own player rows straight away, so a report never sits with
+    // bare names when the squad data to resolve them is already there.
+    const linked = await linkEventPlayers();
+    if (r.matched || linked.linkedPlayers) {
       console.log(
-        `[events] ${r.matched}/${r.matchesConsidered} matched — ${r.eventsStored} events, ${r.statsStored} stats`,
+        `[events] ${r.matched}/${r.matchesConsidered} matched — ${r.eventsStored} events, ` +
+          `${r.statsStored} stats, ${linked.linkedPlayers} players linked`,
       );
     }
   }));

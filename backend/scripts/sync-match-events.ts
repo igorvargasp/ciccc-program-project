@@ -10,7 +10,10 @@
  * is for filling in history.
  */
 import "dotenv/config";
-import { syncMatchEvents } from "../src/services/match-events.js";
+import {
+  linkEventPlayers,
+  syncMatchEvents,
+} from "../src/services/match-events.js";
 
 const lookbackDays = Number(process.argv[2]) || 14;
 const maxMatches = Number(process.argv[3]) || 60;
@@ -20,6 +23,7 @@ console.log(
 );
 
 const r = await syncMatchEvents({ lookbackDays, maxMatches });
+const linked = await linkEventPlayers();
 
 console.log(
   `days scanned      ${r.days}\n` +
@@ -27,7 +31,8 @@ console.log(
     `  matched         ${r.matched}\n` +
     `  no coverage     ${r.withoutData}\n` +
     `events stored     ${r.eventsStored}\n` +
-    `stats stored      ${r.statsStored}`,
+    `stats stored      ${r.statsStored}\n` +
+    `players linked    ${linked.linkedPlayers} (+${linked.linkedAssists} assists, ${linked.unmatched} unmatched)`,
 );
 
 if (r.matchesConsidered === maxMatches) {

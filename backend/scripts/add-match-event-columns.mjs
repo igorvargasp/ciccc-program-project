@@ -22,6 +22,7 @@ const statements = [
   // integer column rejects outright.
   `ALTER TABLE "match_stats" ALTER COLUMN "home" TYPE real USING "home"::real`,
   `ALTER TABLE "match_stats" ALTER COLUMN "away" TYPE real USING "away"::real`,
+  `ALTER TABLE "match_events" ADD COLUMN IF NOT EXISTS "assist_player_id" uuid REFERENCES "players"("id") ON DELETE SET NULL`,
 ];
 
 for (const stmt of statements) {

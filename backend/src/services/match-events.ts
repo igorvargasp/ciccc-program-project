@@ -1,8 +1,8 @@
-import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../db/index.js";
-import { matchEvents, matchStats, matches, teams } from "../db/schema.js";
-import { normalizeTeamName } from "./player-photos.js";
+import { matchEvents, matchStats, matches, players, teams } from "../db/schema.js";
+import { normalizeName, normalizeTeamName } from "./player-photos.js";
 import {
   eventsOnDay,
   lookupEventStats,
@@ -69,6 +69,94 @@ function sameFixture(
     a === b || a.includes(b) || b.includes(a);
 
   return agrees(eHome, ourHome) && agrees(eAway, ourAway);
+}
+
+/**
+ * Attach our own player rows to events that only carry a name.
+ *
+ * The provider's players are unrelated to ours, so this is name matching
+ * again — but a far safer kind than the one used for photos: `is_home` picks
+ * one squad, so a name is compared against roughly 25 players rather than
+ * every professional footballer. Ambiguity still loses, since the report reads
+ * fine with just a name and badly with the wrong face attached.
+ */
+export async function linkEventPlayers(limitMatches = 200): Promise<{
+  matches: number;
+  linkedPlayers: number;
+  linkedAssists: number;
+  unmatched: number;
+}> {
+  const withEvents = await db
+    .selectDistinct({
+      matchId: matchEvents.matchId,
+      homeTeamId: matches.homeTeamId,
+      awayTeamId: matches.awayTeamId,
+    })
+    .from(matchEvents)
+    .innerJoin(matches, eq(matches.id, matchEvents.matchId))
+    .where(
+      sql`(${matchEvents.playerName} IS NOT NULL AND ${matchEvents.playerId} IS NULL)
+       OR (${matchEvents.assistName} IS NOT NULL AND ${matchEvents.assistPlayerId} IS NULL)`,
+    )
+    .limit(limitMatches);
+
+  const out = { matches: 0, linkedPlayers: 0, linkedAssists: 0, unmatched: 0 };
+
+  for (const m of withEvents) {
+    out.matches += 1;
+
+    const squads = await db
+      .select({ id: players.id, fullName: players.fullName, teamId: players.teamId })
+      .from(players)
+      .where(inArray(players.teamId, [m.homeTeamId, m.awayTeamId]));
+
+    // One index per side, so a name only competes within its own squad.
+    const index = new Map<string, Map<string, string>>([
+      [m.homeTeamId, new Map()],
+      [m.awayTeamId, new Map()],
+    ]);
+    for (const p of squads) {
+      if (!p.teamId) continue;
+      const side = index.get(p.teamId);
+      const key = normalizeName(p.fullName);
+      // A duplicate name inside one squad is unresolvable; drop both.
+      if (side) side.has(key) ? side.set(key, "") : side.set(key, p.id);
+    }
+
+    const events = await db
+      .select()
+      .from(matchEvents)
+      .where(eq(matchEvents.matchId, m.matchId));
+
+    for (const e of events) {
+      const teamId = e.isHome ? m.homeTeamId : m.awayTeamId;
+      const side = index.get(teamId);
+      if (!side) continue;
+
+      const find = (name: string | null) => {
+        if (!name) return null;
+        const hit = side.get(normalizeName(name));
+        return hit || null; // "" means ambiguous, treated as no match
+      };
+
+      const playerId = e.playerId ?? find(e.playerName);
+      const assistPlayerId = e.assistPlayerId ?? find(e.assistName);
+      if (!playerId && !assistPlayerId) {
+        if (e.playerName) out.unmatched += 1;
+        continue;
+      }
+
+      await db
+        .update(matchEvents)
+        .set({ playerId, assistPlayerId })
+        .where(eq(matchEvents.id, e.id));
+
+      if (playerId && !e.playerId) out.linkedPlayers += 1;
+      if (assistPlayerId && !e.assistPlayerId) out.linkedAssists += 1;
+    }
+  }
+
+  return out;
 }
 
 export interface EventSyncResult {

@@ -193,8 +193,18 @@ export const matchEvents = pgTable("match_events", {
   // Events come from TheSportsDB, whose players are unrelated to ours, so the
   // name is stored directly: player_id is only set when we can match one, and
   // the report must still be able to say who scored when we can't.
+  //
+  // For a goal, player is the scorer and assist the provider of the assist.
+  // For a substitution, player is the one coming OFF and assist the one coming
+  // ON — established from the data itself: of the substitutions we hold, the
+  // `player` side has 139 earlier events in the same match against the
+  // `assist` side's 0, and the `assist` side has 66 later events against 1.
   playerName: varchar("player_name", { length: 160 }),
   assistName: varchar("assist_name", { length: 160 }),
+  /** Our player for `assistName`, when one could be matched. */
+  assistPlayerId: uuid("assist_player_id").references(() => players.id, {
+    onDelete: "set null",
+  }),
   /** Which side the event belongs to, so the report can place it. */
   isHome: boolean("is_home"),
   /** Source id, so re-syncing a match doesn't duplicate its events. */
