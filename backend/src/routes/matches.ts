@@ -26,7 +26,7 @@ const listQuery = z.object({
   matchday: z.coerce.number().int().min(1).optional(),
   from: z.coerce.date().optional(),
   to: z.coerce.date().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(50),
+  limit: z.coerce.number().int().min(1).max(300).default(50),
 });
 
 // GET /api/matches — calendar / history with filters
@@ -42,13 +42,17 @@ matchesRouter.get(
       );
     if (q.seasonId) filters.push(eq(matches.seasonId, q.seasonId));
     if (q.competitionId) {
-      const seasonIds = (await db
-        .select({ id: seasons.id })
-        .from(seasons)
-        .where(eq(seasons.competitionId, q.competitionId)))
-        .map((s) => s.id);
+      const seasonIds = (
+        await db
+          .select({ id: seasons.id })
+          .from(seasons)
+          .where(eq(seasons.competitionId, q.competitionId))
+      ).map((s) => s.id);
       if (seasonIds.length) filters.push(inArray(matches.seasonId, seasonIds));
-      else { res.json({ data: [] }); return; }
+      else {
+        res.json({ data: [] });
+        return;
+      }
     }
     if (q.status) filters.push(eq(matches.status, q.status));
     if (q.matchday) filters.push(eq(matches.matchday, q.matchday));
@@ -75,7 +79,11 @@ matchesRouter.get(
           name: competitions.name,
           logoUrl: competitions.logoUrl,
         },
-        season: { id: seasons.id, label: seasons.label },
+        season: {
+          id: seasons.id,
+          label: seasons.label,
+          competitionId: seasons.competitionId,
+        },
         homeTeam: {
           id: homeTeamAlias.id,
           name: homeTeamAlias.name,
@@ -101,6 +109,8 @@ matchesRouter.get(
     res.json({
       data: rows.map((r) => ({
         ...r.match,
+        // Propaga o ID da competição diretamente na raiz para facilitar os filtros no frontend
+        competitionId: r.competition?.id ?? r.season?.competitionId,
         competition: r.competition,
         season: r.season,
         homeTeam: r.homeTeam,
@@ -114,10 +124,6 @@ matchesRouter.get(
  * GET /api/matches/:id/context — everything worth knowing about a fixture that
  * isn't the fixture itself: recent form, the sides' head-to-head record, and
  * where they sit in the table.
- *
- * All of it is derived from matches we already hold, so it costs no external
- * requests and works for upcoming fixtures, where there is nothing to report
- * on yet.
  */
 matchesRouter.get(
   "/:id/context",
@@ -139,7 +145,6 @@ matchesRouter.get(
     const { homeTeamId, awayTeamId } = match;
     const before = match.kickoffAt ?? new Date();
 
-    /** Last finished matches for a team, most recent first. */
     const recentFor = (teamId: string) =>
       db
         .select({
@@ -164,7 +169,6 @@ matchesRouter.get(
     const [homeRecent, awayRecent, headToHead, table] = await Promise.all([
       recentFor(homeTeamId),
       recentFor(awayTeamId),
-      // Meetings between these two, whichever way round they were played.
       db
         .select({
           id: matches.id,
@@ -211,7 +215,6 @@ matchesRouter.get(
         : Promise.resolve([]),
     ]);
 
-    /** W/D/L from the perspective of `teamId`. */
     const resultFor = (m: (typeof homeRecent)[number], teamId: string) => {
       if (m.homeScore == null || m.awayScore == null) return null;
       const isHome = m.homeTeamId === teamId;
@@ -263,8 +266,6 @@ matchesRouter.get(
 matchesRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    // The detail view renders both clubs with their crests, so join them here
-    // as the list endpoint does — otherwise the match report has no teams.
     const homeTeamAlias = alias(teams, "home_team");
     const awayTeamAlias = alias(teams, "away_team");
 
@@ -276,7 +277,11 @@ matchesRouter.get(
           name: competitions.name,
           logoUrl: competitions.logoUrl,
         },
-        season: { id: seasons.id, label: seasons.label },
+        season: {
+          id: seasons.id,
+          label: seasons.label,
+          competitionId: seasons.competitionId,
+        },
         homeTeam: {
           id: homeTeamAlias.id,
           name: homeTeamAlias.name,
@@ -300,8 +305,6 @@ matchesRouter.get(
 
     if (!match) throw notFound("Match");
 
-    // Join the player through so the report can show a face without a second
-    // round trip per event.
     const eventPlayer = alias(players, "event_player");
 
     const [events, stats] = await Promise.all([
@@ -323,7 +326,11 @@ matchesRouter.get(
         .where(eq(matchEvents.matchId, match.match.id))
         .orderBy(asc(matchEvents.minute)),
       db
-        .select({ stat: matchStats.stat, home: matchStats.home, away: matchStats.away })
+        .select({
+          stat: matchStats.stat,
+          home: matchStats.home,
+          away: matchStats.away,
+        })
         .from(matchStats)
         .where(eq(matchStats.matchId, match.match.id))
         .orderBy(asc(matchStats.stat)),
@@ -332,6 +339,7 @@ matchesRouter.get(
     res.json({
       data: {
         ...match.match,
+        competitionId: match.competition?.id ?? match.season?.competitionId,
         competition: match.competition,
         season: match.season,
         homeTeam: match.homeTeam,
