@@ -38,10 +38,8 @@ export function useNewsRealtime() {
   useEffect(() => {
     const socket = connectSocket();
 
-    const onNews = (article: NewsArticle) => {
-      qc.setQueryData<NewsArticle[]>(['news'], (old) =>
-        old ? [article, ...old] : [article],
-      );
+    const onNews = (_article: NewsArticle) => {
+      qc.invalidateQueries({ queryKey: ['news'] });
     };
 
     socket.on(RT.NEWS_NEW, onNews);

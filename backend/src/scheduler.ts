@@ -4,7 +4,7 @@ import { buildDailyDigest } from "./services/digest.js";
 import { footballDataEnabled, trackedCompetitions } from "./services/football-data.js";
 import { linkEventPlayers, syncMatchEvents } from "./services/match-events.js";
 import { backfillPlayerPhotos } from "./services/player-photos.js";
-import { pollLiveMatches, syncAll, syncFixtures } from "./services/sync.js";
+import { pollLiveMatches, syncAll, syncFixtures, syncSquads } from "./services/sync.js";
 
 /**
  * Background jobs:
@@ -34,8 +34,11 @@ export function startScheduler(): void {
     if (n) console.log(`[live] broadcast ${n} in-play match update(s)`);
   }));
 
-  // Fixtures/results: top of every hour.
-  cron.schedule("0 * * * *", run("hourly", syncFixtures));
+  // Fixtures/results + squads: top of every hour.
+  cron.schedule("0 * * * *", run("hourly", async () => {
+    await syncFixtures();
+    await syncSquads();
+  }));
 
   // Daily full refresh + digest.
   cron.schedule(env.DAILY_DIGEST_CRON, run("daily", async () => {
