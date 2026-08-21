@@ -32,6 +32,33 @@ interface SavedLineup {
   createdAt: string;
 }
 
+const getPositionByCoordinates = (
+  x: number,
+  y: number,
+): { role: string; label: string } => {
+  // Se o Y for baixo (topo do campo visual), consideramos Defesa/Goleiro
+  if (y < 20) {
+    return { role: "GK", label: "Goleiro" };
+  }
+
+  if (y < 45) {
+    if (x < 30) return { role: "LB", label: "Lateral Esquerdo" };
+    if (x > 70) return { role: "RB", label: "Lateral Direito" };
+    return { role: "CB", label: "Zagueiro" };
+  }
+
+  if (y < 70) {
+    if (x < 30) return { role: "LM", label: "Meia Esquerda" };
+    if (x > 70) return { role: "RM", label: "Meia Direita" };
+    return { role: "CM", label: "Meio-Campista" };
+  }
+
+  // Parte inferior do campo (Ataque)
+  if (x < 30) return { role: "LW", label: "Ponta Esquerda" };
+  if (x > 70) return { role: "RW", label: "Ponta Direita" };
+  return { role: "ST", label: "Atacante" };
+};
+
 export function LineupPage() {
   const { t } = useTranslation();
 
@@ -66,6 +93,12 @@ export function LineupPage() {
   const [savedLineups, setSavedLineups] = useState<SavedLineup[]>([]);
   const [lineupName, setLineupName] = useState<string>("My Dream Team");
   const [favoriteTeam, setFavoriteTeam] = useState<any>(null);
+
+  // IDs de jogadores já selecionados (tanto titulares quanto reservas) para evitar duplicatas
+  const selectedPlayerIds = [
+    ...Object.values(lineupPlayers).map((p) => p.id),
+    ...Object.values(subPlayers).map((p) => p.id),
+  ];
 
   useEffect(() => {
     const savedCoach = localStorage.getItem("my_coach_profile");
@@ -194,6 +227,22 @@ export function LineupPage() {
       ...prev,
       [index]: coords,
     }));
+
+    setLineupPlayers((prev) => {
+      const player = prev[index];
+      if (!player) return prev;
+
+      const newPos = getPositionByCoordinates(coords.x, coords.y);
+
+      return {
+        ...prev,
+        [index]: {
+          ...player,
+          position: newPos.role,
+          role: newPos.label,
+        },
+      };
+    });
   };
 
   const handleCoachFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,6 +259,30 @@ export function LineupPage() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleRemoveCoachPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCoachPhoto(null);
+    if (coachFileRef.current) {
+      coachFileRef.current.value = "";
+    }
+
+    const savedCoach = localStorage.getItem("my_coach_profile");
+    if (savedCoach) {
+      try {
+        const parsed = JSON.parse(savedCoach);
+        localStorage.setItem(
+          "my_coach_profile",
+          JSON.stringify({ ...parsed, photo: null }),
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    toast.success(
+      t("lineup.toast.coachPhotoRemoved") || "Foto do técnico removida",
+    );
   };
 
   return (
@@ -349,12 +422,22 @@ export function LineupPage() {
               className="relative w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-surface-2 border-2 border-dashed border-edge/40 hover:border-brand flex items-center justify-center cursor-pointer overflow-hidden group shrink-0 transition-all"
             >
               {coachPhoto ? (
-                <img
-                  key={coachPhoto}
-                  src={coachPhoto}
-                  alt="Coach"
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    key={coachPhoto}
+                    src={coachPhoto}
+                    alt="Coach"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoachPhoto}
+                    title={t("lineup.removePhoto") || "Remover foto"}
+                    className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-xs font-bold shadow-md cursor-pointer z-10"
+                  >
+                    ✕
+                  </button>
+                </>
               ) : (
                 <Camera className="w-6 h-6 text-muted group-hover:text-brand transition-colors" />
               )}
@@ -508,12 +591,22 @@ export function LineupPage() {
                   className="w-24 h-24 rounded-full bg-surface-2 border-2 border-dashed border-edge/40 hover:border-brand flex items-center justify-center cursor-pointer overflow-hidden relative group"
                 >
                   {coachPhoto ? (
-                    <img
-                      key={coachPhoto}
-                      src={coachPhoto}
-                      alt="Coach"
-                      className="w-full h-full object-cover"
-                    />
+                    <>
+                      <img
+                        key={coachPhoto}
+                        src={coachPhoto}
+                        alt="Coach"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoachPhoto}
+                        title={t("lineup.removePhoto") || "Remover foto"}
+                        className="absolute top-0 right-0 w-7 h-7 bg-red-600 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-xs font-bold shadow-md cursor-pointer z-10"
+                      >
+                        ✕
+                      </button>
+                    </>
                   ) : (
                     <Camera className="w-8 h-8 text-muted group-hover:text-brand" />
                   )}
@@ -576,11 +669,12 @@ export function LineupPage() {
         }}
       />
 
-      {/* MODAL 3: JOGADOR */}
+      {/* MODAL 3: JOGADOR (Com exclusão dos já selecionados) */}
       <PlayerSearchModal
         isOpen={isPlayerModalOpen}
         onClose={() => setIsPlayerModalOpen(false)}
         onSelectPlayer={handleSelectPlayer}
+        excludePlayerIds={selectedPlayerIds}
       />
 
       {/* MODAL 4: CAPITÃO */}

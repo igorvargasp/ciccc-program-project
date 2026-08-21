@@ -1,6 +1,32 @@
 import { useState, useRef } from "react";
-import { User, Move, Globe, Shield, Trash2, Bookmark } from "lucide-react";
+import { User, Move, Globe } from "lucide-react";
 import type { LineupSlotPlayer as Player } from "@/types";
+
+export type Language = "pt" | "en" | "es";
+
+const TRANSLATIONS = {
+  pt: {
+    dragInstructions:
+      "Arraste e solte os cards dos jogadores em qualquer lugar do campo para criar seu layout personalizado!",
+    doubleClickTip:
+      "Dê um duplo clique em qualquer posição para abrir o modal de seleção de jogadores.",
+    positionFallback: "POS",
+  },
+  en: {
+    dragInstructions:
+      "Drag and drop player cards anywhere on the pitch to build your custom layout!",
+    doubleClickTip:
+      "Double-click any position to open the player selection modal.",
+    positionFallback: "POS",
+  },
+  es: {
+    dragInstructions:
+      "¡Arrastra y suelta las tarjetas de los jugadores en cualquier lugar del campo para crear tu diseño personalizado!",
+    doubleClickTip:
+      "Haz doble clic en cualquier posición para abrir el modal de selección de jugadores.",
+    positionFallback: "POS",
+  },
+};
 
 export const PITCH_STYLES = {
   modern: {
@@ -151,6 +177,7 @@ interface FootballPitchProps {
     index: number,
     coords: { x: number; y: number },
   ) => void;
+  language?: Language; // Adicionado suporte a idioma opcional
 }
 
 export default function FootballPitch({
@@ -161,10 +188,12 @@ export default function FootballPitch({
   pitchStyle = "modern",
   customPositions = {},
   onUpdateCustomPosition,
+  language = "pt", // Padrão português
 }: FootballPitchProps) {
   const pitchRef = useRef<HTMLDivElement>(null);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
+  const t = TRANSLATIONS[language] || TRANSLATIONS.pt;
   const styleConfig = PITCH_STYLES[pitchStyle] || PITCH_STYLES.modern;
   const isCustomMode = formation === "CUSTOM";
   const basePositions =
@@ -204,48 +233,43 @@ export default function FootballPitch({
   };
 
   return (
-    <div className="w-full flex flex-col items-center gap-3">
-      {/* Dica informativa do modo Custom */}
+    <div className="w-full flex flex-col items-center gap-3 px-2 sm:px-0">
       {isCustomMode && (
         <div className="w-full max-w-[480px] bg-brand/10 border border-brand/30 px-3 py-2 rounded-xl text-xs text-foreground/90 flex items-center gap-2 shadow-sm">
           <Move className="w-4 h-4 text-brand shrink-0 animate-pulse" />
           <span>
-            <strong>
-              Drag and drop player cards anywhere on the pitch to build your
-              custom layout!
-            </strong>{" "}
-            Double-click any position to open the player selection modal.
+            <strong>{t.dragInstructions}</strong> {t.doubleClickTip}
           </span>
         </div>
       )}
 
-      {/* Campo de Futebol */}
+      {/* Contenhador com responsividade otimizada para telas pequenas, médias e grandes */}
       <div
         ref={pitchRef}
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
         onTouchMove={handleDragMove}
         onTouchEnd={handleDragEnd}
-        className={`relative w-full max-w-[480px] aspect-[3/4] rounded-2xl border-2 ${styleConfig.bg} shadow-xl overflow-hidden select-none flex flex-col items-center justify-between p-6`}
+        className={`relative w-full max-w-[90vw] sm:max-w-[420px] md:max-w-[480px] aspect-[3/4] rounded-2xl border-2 ${styleConfig.bg} shadow-xl overflow-hidden select-none flex flex-col items-center justify-between p-4 sm:p-6`}
       >
         <div
-          className={`absolute inset-4 border-2 ${styleConfig.lines} rounded-xl pointer-events-none`}
+          className={`absolute inset-3 sm:inset-4 border-2 ${styleConfig.lines} rounded-xl pointer-events-none`}
         />
         <div
           className={`absolute top-1/2 left-0 w-full h-0.5 ${styleConfig.lines.replace("border-", "bg-")} opacity-40 pointer-events-none`}
         />
         <div
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 border-2 ${styleConfig.lines} rounded-full pointer-events-none`}
+          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 sm:w-28 sm:h-28 border-2 ${styleConfig.lines} rounded-full pointer-events-none`}
         />
         <div
           className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 ${styleConfig.lines.replace("border-", "bg-")} rounded-full pointer-events-none`}
         />
 
         <div
-          className={`absolute top-4 left-1/2 -translate-x-1/2 w-48 h-20 border-b-2 border-x-2 ${styleConfig.lines} rounded-b-xl pointer-events-none`}
+          className={`absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 w-36 sm:w-48 h-16 sm:h-20 border-b-2 border-x-2 ${styleConfig.lines} rounded-b-xl pointer-events-none`}
         />
         <div
-          className={`absolute bottom-4 left-1/2 -translate-x-1/2 w-48 h-20 border-t-2 border-x-2 ${styleConfig.lines} rounded-t-xl pointer-events-none`}
+          className={`absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 w-36 sm:w-48 h-16 sm:h-20 border-t-2 border-x-2 ${styleConfig.lines} rounded-t-xl pointer-events-none`}
         />
 
         <div className="absolute inset-0 w-full h-full pointer-events-auto">
@@ -259,7 +283,7 @@ export default function FootballPitch({
             const defaultPos = basePositions[index] || {
               x: 50,
               y: 50,
-              label: "POS",
+              label: t.positionFallback,
             };
             let pos = { x: defaultPos.x, y: defaultPos.y };
 
@@ -270,6 +294,8 @@ export default function FootballPitch({
             const playerName = player?.fullName || player?.name;
             const playerPhoto =
               player?.photoUrl || player?.badgeUrl || player?.crestUrl;
+
+            const currentPositionLabel = player?.position || defaultPos.label;
 
             return (
               <div
@@ -291,7 +317,7 @@ export default function FootballPitch({
                 }}
                 className={`absolute flex flex-col items-center group z-10 transition-transform ${isCustomMode ? "cursor-grab active:cursor-grabbing hover:scale-105" : "cursor-pointer hover:scale-105"}`}
               >
-                <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-surface/90 backdrop-blur-md border-2 border-edge/30 group-hover:border-brand flex items-center justify-center shadow-lg overflow-hidden transition-all">
+                <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl sm:rounded-2xl bg-surface/90 backdrop-blur-md border-2 border-edge/30 group-hover:border-brand flex items-center justify-center shadow-lg overflow-hidden transition-all">
                   {player ? (
                     <>
                       {playerPhoto ? (
@@ -301,11 +327,11 @@ export default function FootballPitch({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <User className="w-6 h-6 text-muted" />
+                        <User className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
                       )}
 
                       {isCaptain && (
-                        <div className="absolute top-1 right-1 bg-amber-500 text-black font-black text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow-md">
+                        <div className="absolute top-1 right-1 bg-amber-500 text-black font-black text-[8px] sm:text-[9px] w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex items-center justify-center shadow-md">
                           C
                         </div>
                       )}
@@ -318,102 +344,33 @@ export default function FootballPitch({
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center text-muted group-hover:text-brand">
-                      <span className="text-[11px] font-black uppercase tracking-tighter">
-                        {defaultPos.label}
+                      <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-tighter">
+                        {currentPositionLabel}
                       </span>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-1 bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded-md border border-white/10 max-w-[80px] text-center shadow-md">
-                  <span className="text-[9px] font-bold text-white uppercase tracking-tight block truncate">
-                    {player ? playerName?.split(" ").pop() : defaultPos.label}
-                  </span>
+                <div className="mt-1 bg-black/60 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 rounded-md border border-white/10 max-w-[70px] sm:max-w-[80px] text-center shadow-md flex flex-col items-center">
+                  {player ? (
+                    <>
+                      <span className="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-tight block truncate w-full">
+                        {playerName?.split(" ").pop()}
+                      </span>
+                      <span className="text-[7px] sm:text-[8px] font-bold text-[#00d2fd] uppercase tracking-wider block truncate w-full">
+                        {currentPositionLabel}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[8px] sm:text-[9px] font-bold text-white uppercase tracking-tight block truncate w-full">
+                      {currentPositionLabel}
+                    </span>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ----------------------------------------------------------------------
-// Componente de Item da Escalação Salva
-// ----------------------------------------------------------------------
-
-interface SavedLineupItemProps {
-  lineup: {
-    id: string | number;
-    name: string;
-    formation: string;
-    teamName?: string;
-    teamLogo?: string;
-    isGlobal?: boolean;
-  };
-  onLoad: () => void;
-  onDelete: () => void;
-}
-
-export function SavedLineupItem({
-  lineup,
-  onLoad,
-  onDelete,
-}: SavedLineupItemProps) {
-  const isGlobalLineup = lineup.isGlobal || !lineup.teamLogo;
-
-  return (
-    <div className="flex items-center justify-between p-3.5 bg-surface/60 border border-edge/30 rounded-xl hover:border-brand/50 transition-all shadow-sm">
-      <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-xl bg-surface-raised border border-edge/40 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-          {isGlobalLineup ? (
-            <div className="flex items-center justify-center w-full h-full bg-brand/10 text-brand">
-              <Globe className="w-5 h-5" />
-            </div>
-          ) : lineup.teamLogo ? (
-            <img
-              src={lineup.teamLogo}
-              alt={lineup.teamName || "Team Logo"}
-              className="w-7 h-7 object-contain"
-            />
-          ) : (
-            <Shield className="w-5 h-5 text-muted" />
-          )}
-        </div>
-
-        <div>
-          <h4 className="text-sm font-bold text-foreground tracking-tight flex items-center gap-2">
-            {lineup.name}
-          </h4>
-          <div className="flex items-center gap-2 text-xs text-muted mt-0.5">
-            <span className="uppercase font-semibold px-1.5 py-0.5 bg-surface-raised rounded text-[10px] border border-edge/20">
-              {lineup.formation}
-            </span>
-            <span>•</span>
-            <span>
-              {lineup.teamName ||
-                (isGlobalLineup ? "Global Players" : "Custom Team")}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onLoad}
-          className="px-3.5 py-1.5 bg-brand text-brand-foreground rounded-lg text-xs font-bold hover:opacity-90 transition-opacity shadow-sm flex items-center gap-1.5"
-        >
-          <Bookmark className="w-3.5 h-3.5" />
-          Load
-        </button>
-        <button
-          onClick={onDelete}
-          className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-          title="Delete lineup"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );

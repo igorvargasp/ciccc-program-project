@@ -1,7 +1,19 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Swords, History, Sparkles, Activity, Star } from "lucide-react";
+import {
+  Swords,
+  History,
+  Sparkles,
+  Star,
+  Trash2,
+  Calendar,
+  Trophy,
+  Clock,
+  MapPin,
+  Plus,
+  Minus,
+} from "lucide-react";
 import { listMatches } from "../api/matches";
 import { listCompetitions } from "../api/competitions";
 import { createSimulation, listSimulations } from "../api/simulations";
@@ -11,14 +23,8 @@ import { useAuth } from "../context/AuthContext";
 import StandingsTable from "../components/StandingsTable";
 import Button from "../components/ui/Button";
 import { PageSpinner } from "../components/ui/Spinner";
-import { formatMatchDay, formatKickoff } from "../lib/utils";
 import type { StandingRow, Team } from "../types";
 
-/**
- * Simulations stored before the table shape was unified hold flat rows
- * (`{ teamId, teamName }`); StandingsTable reads `row.team`. Lift those into the
- * current shape so old history entries still render.
- */
 function normalizeStandings(
   rows: unknown,
   teamsMap: Map<string, Team>,
@@ -46,10 +52,12 @@ export default function Simulator() {
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  const [activeTab, setActiveTab] = useState<"general" | "my-team">("general");
+  const [activeTab, setActiveTab] = useState<
+    "general" | "my-team" | "matchday"
+  >("general");
   const [selectedCompetitionId, setSelectedCompetitionId] =
     useState<string>("");
-
+  const [selectedMatchday, setSelectedMatchday] = useState<string>("");
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
@@ -58,31 +66,41 @@ export default function Simulator() {
   );
   const [aiInsight, setAiInsight] = useState<any>(null);
 
-  // Fetch competitions for filtering
+  // Fetch competitions
   const { data: competitions } = useQuery({
     queryKey: ["competitions"],
     queryFn: listCompetitions,
     enabled: true,
   });
 
-  // Fetch ALL matches to ensure history mapping works and doesn't show "? vs ?"
+  const competitionsMap = new Map(
+    competitions?.map((c: any) => [c.id, c]) || [],
+  );
+
+  // Fetch ALL matches
   const { data: allMatches } = useQuery({
-    queryKey: ["matches", "all"],
-    queryFn: () => listMatches({ limit: 200 }),
+    queryKey: ["matches", "all-for-matchdays"],
+    queryFn: () => listMatches({ limit: 300 }),
     enabled: true,
   });
 
-  // General scheduled matches with optional competition filter
+  // Scheduled matches with optional competition and matchday filter
   const { data: scheduledMatches } = useQuery({
     queryKey: [
       "matches",
-      { status: "scheduled", competitionId: selectedCompetitionId, limit: 50 },
+      {
+        status: "scheduled",
+        competitionId: selectedCompetitionId,
+        matchday: selectedMatchday,
+        limit: 100,
+      },
     ],
     queryFn: () =>
       listMatches({
         status: "scheduled",
         competitionId: selectedCompetitionId || undefined,
-        limit: 50,
+        matchday: selectedMatchday ? Number(selectedMatchday) : undefined,
+        limit: 100,
       }),
     enabled: true,
   });
@@ -121,9 +139,25 @@ export default function Simulator() {
 
   const activeMatchesList =
     activeTab === "my-team" ? myTeamMatches : scheduledMatches;
+
+  // Extrair rodadas disponíveis de forma flexível
+  const availableMatchdays = Array.from(
+    new Set(
+      (allMatches || [])
+        .filter((m: any) => {
+          if (!selectedCompetitionId) return true;
+          const compId = m.competitionId || m.competition?.id;
+          return String(compId) === String(selectedCompetitionId);
+        })
+        .map((m: any) => m.matchday || m.round)
+        .filter((md: any) => md !== undefined && md !== null && !isNaN(md)),
+    ),
+  ).sort((a: any, b: any) => Number(a) - Number(b));
+
   const selectedMatch = activeMatchesList?.find(
     (m) => m.id === selectedMatchId,
   );
+
   const homeTeam = selectedMatch
     ? teamsMap.get(selectedMatch.homeTeamId)
     : undefined;
@@ -131,242 +165,444 @@ export default function Simulator() {
     ? teamsMap.get(selectedMatch.awayTeamId)
     : undefined;
 
+  const competitionInfo = selectedMatch
+    ? selectedMatch.competition?.name
+      ? selectedMatch.competition
+      : competitionsMap.get(selectedMatch.competitionId)
+    : undefined;
+
+  const matchDate = selectedMatch?.kickoffAt;
+  const matchVenue = selectedMatch?.venue || selectedMatch?.stadium;
+
+  // Group matches by competition for the card view selector
+  const matchesByCompetition = (activeMatchesList || []).reduce(
+    (acc: any, m: any) => {
+      const compId = m.competitionId || "other";
+      if (!acc[compId]) acc[compId] = [];
+      if (selectedMatchday && String(m.matchday) !== String(selectedMatchday)) {
+        return acc;
+      }
+      acc[compId].push(m);
+      return acc;
+    },
+    {},
+  );
+
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
       <div>
-        <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-2">
           <Swords className="w-6 h-6 text-brand" />
           {t("simulator.title")}
         </h1>
-        <p className="text-muted mt-1 text-sm">{t("simulator.description")}</p>
+        <p className="text-muted mt-1 text-xs sm:text-sm">
+          {t("simulator.description")}
+        </p>
       </div>
 
-      {/* Mode Tabs & Competition Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex gap-1 bg-surface-2 rounded-xl p-1 w-fit border border-edge/12">
+      {/* Mode Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-x-auto pb-2">
+        <div className="flex gap-1 bg-surface-2 rounded-xl p-1 w-full sm:w-fit border border-edge/12">
           <button
             onClick={() => {
               setActiveTab("general");
               setSelectedMatchId("");
               setResultStandings(null);
-              setAiInsight(null);
             }}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all text-center ${
               activeTab === "general"
                 ? "bg-brand text-white shadow-sm"
                 : "text-muted hover:text-foreground"
             }`}
           >
-            All Matches
+            {t("simulator.tabs.allMatches", "All Matches")}
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("matchday");
+              setSelectedMatchId("");
+              setResultStandings(null);
+            }}
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === "matchday"
+                ? "bg-brand text-white shadow-sm"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />{" "}
+            {t("simulator.tabs.matchdays", "Matchdays")}
           </button>
           <button
             onClick={() => {
               setActiveTab("my-team");
               setSelectedMatchId("");
               setResultStandings(null);
-              setAiInsight(null);
             }}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
               activeTab === "my-team"
                 ? "bg-brand text-white shadow-sm"
                 : "text-muted hover:text-foreground"
             }`}
           >
-            <Star className="w-3.5 h-3.5" /> My Team Simulator
+            <Star className="w-3.5 h-3.5" />{" "}
+            {t("simulator.tabs.myTeam", "My Team")}
           </button>
         </div>
-
-        {/* Competition Filter Selector */}
-        {activeTab === "general" && competitions && (
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedCompetitionId}
-              onChange={(e) => {
-                setSelectedCompetitionId(e.target.value);
-                setSelectedMatchId("");
-                setResultStandings(null);
-                setAiInsight(null);
-              }}
-              className="bg-surface-2 border border-edge/12 rounded-xl px-3 py-2 text-xs font-semibold text-foreground focus:outline-none focus:border-brand transition-colors"
-            >
-              <option value="">All Competitions</option>
-              {competitions.map((comp: any) => (
-                <option key={comp.id} value={comp.id}>
-                  {comp.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
-      {/* Match selector */}
-      <div className="bg-surface border border-edge/12 rounded-2xl p-5 space-y-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-brand/5 rounded-full blur-2xl pointer-events-none"></div>
+      {/* Main Layout Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Side: Match Selector */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-surface border border-edge/12 rounded-2xl p-4 sm:p-5 space-y-4 relative overflow-hidden shadow-sm">
+            <h2 className="text-sm sm:text-base font-extrabold text-foreground">
+              {activeTab === "matchday"
+                ? t(
+                    "simulator.selectMatchdayFixtures",
+                    "Select Matchday Fixtures",
+                  )
+                : t("simulator.selectMatch", "Select Match")}
+            </h2>
 
-        <h2 className="text-base font-extrabold text-foreground">
-          {activeTab === "my-team"
-            ? "Select Your Team's Upcoming Match"
-            : t("simulator.selectMatch")}
-        </h2>
+            {activeTab !== "my-team" && competitions && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-edge/12">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted uppercase">
+                    {t("simulator.filters.competition", "Competition")}
+                  </label>
+                  <select
+                    value={selectedCompetitionId}
+                    onChange={(e) => {
+                      setSelectedCompetitionId(e.target.value);
+                      setSelectedMatchday("");
+                      setSelectedMatchId("");
+                      setResultStandings(null);
+                    }}
+                    className="w-full bg-surface-2 border border-edge/12 rounded-xl px-3 py-2 text-xs font-semibold text-foreground focus:outline-none focus:border-brand transition-colors"
+                  >
+                    <option value="">
+                      {t(
+                        "simulator.filters.allCompetitions",
+                        "All Competitions",
+                      )}
+                    </option>
+                    {competitions.map((comp: any) => (
+                      <option key={comp.id} value={comp.id}>
+                        {comp.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-        {activeTab === "my-team" && !favoriteTeamId ? (
-          <div className="p-4 bg-surface-2 rounded-xl text-center space-y-2">
-            <p className="text-xs text-muted">
-              You haven't selected a favorite team yet.
-            </p>
-          </div>
-        ) : (
-          <select
-            value={selectedMatchId}
-            onChange={(e) => {
-              setSelectedMatchId(e.target.value);
-              setResultStandings(null);
-              setAiInsight(null);
-            }}
-            className="w-full bg-surface-2 border border-edge/12 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-brand transition-colors"
-          >
-            <option value="">{t("simulator.selectMatch")}…</option>
-            {activeMatchesList?.map((m) => {
-              const home = teamsMap.get(m.homeTeamId);
-              const away = teamsMap.get(m.awayTeamId);
-              return (
-                <option key={m.id} value={m.id}>
-                  {home?.name || home?.shortName || "?"} vs{" "}
-                  {away?.name || away?.shortName || "?"} —{" "}
-                  {formatMatchDay(m.kickoffAt)} {formatKickoff(m.kickoffAt)}
-                </option>
-              );
-            })}
-          </select>
-        )}
-
-        {/* Selected match preview */}
-        {selectedMatch && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4 bg-surface-2 rounded-xl p-4">
-              {/* Home */}
-              <div className="flex flex-col items-center gap-1.5 flex-1">
-                {homeTeam?.crestUrl && (
-                  <img
-                    src={homeTeam.crestUrl}
-                    alt={homeTeam.name}
-                    className="w-10 h-10 object-contain"
-                  />
-                )}
-                <span className="text-sm font-semibold text-foreground">
-                  {homeTeam?.shortName ?? "?"}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={50}
-                  value={homeScore}
-                  onChange={(e) => setHomeScore(Number(e.target.value))}
-                  className="w-16 text-center text-xl font-black bg-surface border border-edge/12 rounded-lg py-1 text-foreground focus:outline-none focus:border-brand transition-colors"
-                />
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted uppercase">
+                    {t("simulator.filters.matchday", "Matchday")}
+                  </label>
+                  <select
+                    value={selectedMatchday}
+                    onChange={(e) => {
+                      setSelectedMatchday(e.target.value);
+                      setSelectedMatchId("");
+                      setResultStandings(null);
+                    }}
+                    className="w-full bg-surface-2 border border-edge/12 rounded-xl px-3 py-2 text-xs font-semibold text-foreground focus:outline-none focus:border-brand transition-colors"
+                  >
+                    <option value="">
+                      {t("simulator.filters.allMatchdays", "All Matchdays")}
+                    </option>
+                    {availableMatchdays.map((md: any) => (
+                      <option key={md} value={md}>
+                        {t("simulator.filters.matchdayNumber", "Matchday")} {md}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
+            )}
 
-              <span className="text-muted font-bold text-lg">–</span>
+            <div className="max-h-[500px] sm:max-h-[580px] overflow-y-auto space-y-4 pr-1">
+              {Object.keys(matchesByCompetition).length === 0 ? (
+                <p className="text-xs text-muted text-center py-6">
+                  {t("simulator.noMatches", "No scheduled matches available.")}
+                </p>
+              ) : (
+                Object.entries(matchesByCompetition).map(
+                  ([compId, matches]: [string, any]) => {
+                    const comp = competitionsMap.get(compId) as any;
+                    const competitionName =
+                      comp?.name ||
+                      t("simulator.otherCompetitions", "Other Competitions");
 
-              {/* Away */}
-              <div className="flex flex-col items-center gap-1.5 flex-1">
-                {awayTeam?.crestUrl && (
-                  <img
-                    src={awayTeam.crestUrl}
-                    alt={awayTeam.name}
-                    className="w-10 h-10 object-contain"
-                  />
-                )}
-                <span className="text-sm font-semibold text-foreground">
-                  {awayTeam?.shortName ?? "?"}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={50}
-                  value={awayScore}
-                  onChange={(e) => setAwayScore(Number(e.target.value))}
-                  className="w-16 text-center text-xl font-black bg-surface border border-edge/12 rounded-lg py-1 text-foreground focus:outline-none focus:border-brand transition-colors"
-                />
-              </div>
+                    return (
+                      <div key={compId} className="space-y-2">
+                        <h3 className="text-xs font-black text-foreground flex items-center gap-2 bg-surface-2 px-3 py-2 rounded-lg border border-edge/10 uppercase tracking-wider">
+                          <Trophy className="w-3.5 h-3.5 text-brand" />
+                          <span className="truncate">{competitionName}</span>
+                        </h3>
+                        <div className="grid grid-cols-1 gap-2">
+                          {matches.map((m: any) => {
+                            const home = teamsMap.get(m.homeTeamId);
+                            const away = teamsMap.get(m.awayTeamId);
+                            const isSelected = selectedMatchId === m.id;
+
+                            return (
+                              <div
+                                key={m.id}
+                                onClick={() => {
+                                  setSelectedMatchId(m.id);
+                                  setHomeScore(0);
+                                  setAwayScore(0);
+                                  setResultStandings(null);
+                                }}
+                                className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-2 sm:gap-3 ${
+                                  isSelected
+                                    ? "border-brand bg-brand/5 shadow-sm"
+                                    : "border-edge/12 bg-surface-2/5 hover:border-brand/40"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <img
+                                    src={home?.crestUrl}
+                                    alt=""
+                                    className="w-5 h-5 sm:w-6 sm:h-6 object-contain flex-shrink-0"
+                                  />
+                                  <span className="text-xs font-semibold truncate text-foreground">
+                                    {home?.shortName || home?.name}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col items-center flex-shrink-0">
+                                  <span className="text-[10px] font-bold text-muted">
+                                    vs
+                                  </span>
+                                  {m.matchday && (
+                                    <span className="text-[9px] text-muted font-medium">
+                                      R.{m.matchday}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                                  <span className="text-xs font-semibold truncate text-foreground text-right">
+                                    {away?.shortName || away?.name}
+                                  </span>
+                                  <img
+                                    src={away?.crestUrl}
+                                    alt=""
+                                    className="w-5 h-5 sm:w-6 sm:h-6 object-contain flex-shrink-0"
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  },
+                )
+              )}
             </div>
           </div>
-        )}
+        </div>
 
-        <Button
-          disabled={!selectedMatchId}
-          loading={simulate.isPending}
-          onClick={() =>
-            simulate.mutate({ matchId: selectedMatchId, homeScore, awayScore })
-          }
-          className="w-full"
-        >
-          {simulate.isPending ? (
-            <Activity className="w-4 h-4 animate-spin" />
-          ) : (
-            <Swords className="w-4 h-4" />
-          )}
-          {simulate.isPending
-            ? t("simulator.loading")
-            : t("simulator.simulate")}
-        </Button>
+        {/* Right Side: Simulation Control Panel & Projected Standings */}
+        <div className="lg:col-span-7 space-y-6">
+          {selectedMatch ? (
+            <div className="bg-surface border border-edge/12 rounded-2xl p-4 sm:p-5 space-y-5 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-brand" />
+
+              {/* Competition Name Header */}
+              <div className="flex items-center gap-2 pb-2 border-b border-edge/12 text-xs font-bold text-foreground">
+                <Trophy className="w-4 h-4 text-brand" />
+                <span className="truncate">
+                  {competitionInfo?.name ||
+                    t("simulator.championship", "Championship")}
+                </span>
+                {selectedMatch.matchday && (
+                  <span className="text-muted font-normal whitespace-nowrap">
+                    • {t("simulator.filters.matchday", "Matchday")}{" "}
+                    {selectedMatch.matchday}
+                  </span>
+                )}
+              </div>
+
+              {/* Score Control Board */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+                {/* Home Team */}
+                <div className="flex flex-col items-center gap-2 w-full sm:flex-1">
+                  <img
+                    src={homeTeam?.crestUrl}
+                    alt=""
+                    className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                  />
+                  <span className="text-xs font-bold text-foreground text-center line-clamp-1">
+                    {homeTeam?.name || homeTeam?.shortName}
+                  </span>
+
+                  <div className="flex items-center bg-surface-2 border border-edge/12 rounded-xl p-1">
+                    <button
+                      onClick={() => setHomeScore(Math.max(0, homeScore - 1))}
+                      className="w-8 h-8 flex items-center justify-center bg-surface hover:bg-brand/10 text-foreground rounded-lg transition-colors shadow-2xs"
+                      aria-label="Diminuir gols da casa"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-10 text-center text-lg font-black text-foreground">
+                      {homeScore}
+                    </span>
+                    <button
+                      onClick={() => setHomeScore(Math.min(50, homeScore + 1))}
+                      className="w-8 h-8 flex items-center justify-center bg-surface hover:bg-brand/10 text-foreground rounded-lg transition-colors shadow-2xs"
+                      aria-label="Aumentar gols da casa"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Central Info: VS + Date, Time & Venue below */}
+                <div className="flex flex-col items-center justify-center px-2 gap-1.5 order-first sm:order-none">
+                  <span className="hidden sm:inline text-muted font-black text-xl italic tracking-wider">
+                    VS
+                  </span>
+
+                  <div className="flex flex-col items-center text-[10px] text-muted space-y-1 bg-surface-2 px-3 py-2 rounded-lg border border-edge/10 w-full sm:w-auto text-center shadow-2xs">
+                    {matchDate && (
+                      <div className="flex items-center justify-center gap-1.5 font-semibold text-foreground flex-wrap">
+                        <Calendar className="w-3 h-3 text-brand" />
+                        <span>{new Date(matchDate).toLocaleDateString()}</span>
+                        <Clock className="w-3 h-3 ml-1 text-brand" />
+                        <span>
+                          {new Date(matchDate).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    {matchVenue && (
+                      <div className="flex items-center justify-center gap-1">
+                        <MapPin className="w-3 h-3 text-brand" />
+                        <span className="truncate max-w-[200px]">
+                          {matchVenue}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Away Team */}
+                <div className="flex flex-col items-center gap-2 w-full sm:flex-1">
+                  <img
+                    src={awayTeam?.crestUrl}
+                    alt=""
+                    className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                  />
+                  <span className="text-xs font-bold text-foreground text-center line-clamp-1">
+                    {awayTeam?.name || awayTeam?.shortName}
+                  </span>
+
+                  <div className="flex items-center bg-surface-2 border border-edge/12 rounded-xl p-1">
+                    <button
+                      onClick={() => setAwayScore(Math.max(0, awayScore - 1))}
+                      className="w-8 h-8 flex items-center justify-center bg-surface hover:bg-brand/10 text-foreground rounded-lg transition-colors shadow-2xs"
+                      aria-label="Diminuir gols visitante"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-10 text-center text-lg font-black text-foreground">
+                      {awayScore}
+                    </span>
+                    <button
+                      onClick={() => setAwayScore(Math.min(50, awayScore + 1))}
+                      className="w-8 h-8 flex items-center justify-center bg-surface hover:bg-brand/10 text-foreground rounded-lg transition-colors shadow-2xs"
+                      aria-label="Aumentar gols visitante"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                loading={simulate.isPending}
+                onClick={() =>
+                  simulate.mutate({
+                    matchId: selectedMatchId,
+                    homeScore,
+                    awayScore,
+                  })
+                }
+                className="w-full"
+              >
+                <Swords className="w-4 h-4" />
+                {simulate.isPending
+                  ? t("simulator.loading", "Simulating...")
+                  : t("simulator.simulate", "Run Simulation")}
+              </Button>
+            </div>
+          ) : null}
+
+          {/* Standings View */}
+          <div className="bg-surface border border-edge/12 rounded-2xl p-4 sm:p-5 min-h-[450px] shadow-sm overflow-x-auto">
+            <h2 className="text-sm sm:text-base font-extrabold text-foreground mb-4 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-brand" />
+              {t("simulator.projectedStandings", "Projected Standings")}
+            </h2>
+            {resultStandings && resultStandings.length > 0 ? (
+              <StandingsTable rows={resultStandings} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-80 text-center space-y-2 text-muted px-4">
+                <Swords className="w-10 h-10 stroke-1 opacity-40" />
+                <p className="text-xs sm:text-sm max-w-md">
+                  {t(
+                    "simulator.emptyStandingsPrompt",
+                    "Select a match on the left, define the score above, and run the simulation to preview the updated league table.",
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Projected standings */}
-      {resultStandings && resultStandings.length > 0 && (
-        <div className="bg-surface border border-edge/12 rounded-2xl p-5">
-          <h2 className="text-base font-extrabold text-foreground mb-4">
-            {t("simulator.projectedStandings")}
+      {/* History Section */}
+      <div className="pt-6 border-t border-edge/12">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 className="text-base sm:text-lg font-extrabold text-foreground flex items-center gap-2">
+            <History className="w-5 h-5 text-muted" />
+            {t("simulator.history", "Simulation History")}
           </h2>
-          <StandingsTable rows={resultStandings} />
+          {simulations?.length > 0 && (
+            <button
+              onClick={() => {
+                qc.setQueryData(["simulations"], []);
+              }}
+              className="text-xs font-semibold text-red-500 hover:text-red-600 flex items-center gap-1 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />{" "}
+              {t("simulator.clearHistory", "Clear History")}
+            </button>
+          )}
         </div>
-      )}
-
-      {/* History */}
-      <div>
-        <h2 className="text-lg font-extrabold text-foreground flex items-center gap-2 mb-4">
-          <History className="w-5 h-5 text-muted" />
-          {t("simulator.history")}
-        </h2>
 
         {loadingSims ? (
           <PageSpinner />
         ) : !simulations?.length ? (
-          <p className="text-muted text-sm">{t("simulator.noSimulations")}</p>
+          <p className="text-muted text-xs sm:text-sm">
+            {t("simulator.noSimulations", "No previous simulations found.")}
+          </p>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {simulations.map((sim: any) => {
-              // The API now sends both clubs with the simulation; the local
-              // match list is only a fallback for rows saved before that.
               const m = allMatches?.find((x: any) => x.id === sim.matchId);
               const home =
                 sim.homeTeam ?? (m ? teamsMap.get(m.homeTeamId) : undefined);
               const away =
                 sim.awayTeam ?? (m ? teamsMap.get(m.awayTeamId) : undefined);
 
-              const crest = (team: any) =>
-                team?.crestUrl || team?.crest || team?.logo;
-
-              const badge = (team: any, label: string) =>
-                crest(team) ? (
-                  <img
-                    src={crest(team)}
-                    alt={team?.name || label}
-                    className="w-7 h-7 object-contain flex-shrink-0 drop-shadow"
-                  />
-                ) : (
-                  <div className="w-7 h-7 rounded-md bg-surface-2 border border-edge/20 flex items-center justify-center text-[10px] font-bold text-muted flex-shrink-0">
-                    {(team?.shortName || team?.name || label)
-                      .slice(0, 3)
-                      .toUpperCase()}
-                  </div>
-                );
-
               return (
                 <div
                   key={sim.id}
-                  className="bg-surface border border-edge/12 rounded-xl p-4 flex items-center justify-between gap-4 cursor-pointer hover:border-brand/30 transition-colors"
+                  className="bg-surface border border-edge/12 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-brand/30 transition-colors shadow-xs"
                   onClick={() => {
                     const rows = normalizeStandings(
                       sim.resultingStandings,
@@ -375,15 +611,23 @@ export default function Simulator() {
                     if (rows) setResultStandings(rows);
                   }}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    {badge(home, "?")}
-                    <span className="text-sm font-semibold text-foreground truncate">
-                      {home?.shortName || home?.name || "?"} vs{" "}
-                      {away?.shortName || away?.name || "?"}
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <img
+                      src={home?.crestUrl || home?.logo}
+                      alt=""
+                      className="w-5 h-5 sm:w-6 sm:h-6 object-contain flex-shrink-0"
+                    />
+                    <span className="text-xs font-semibold text-foreground truncate">
+                      {home?.shortName || home?.name} vs{" "}
+                      {away?.shortName || away?.name}
                     </span>
-                    {badge(away, "?")}
+                    <img
+                      src={away?.crestUrl || away?.logo}
+                      alt=""
+                      className="w-5 h-5 sm:w-6 sm:h-6 object-contain flex-shrink-0"
+                    />
                   </div>
-                  <div className="text-xl font-black text-foreground flex-shrink-0">
+                  <div className="text-xs sm:text-sm font-black text-foreground flex-shrink-0 bg-surface-2 px-2 py-1 rounded-md">
                     {sim.simulatedHomeScore ?? 0} –{" "}
                     {sim.simulatedAwayScore ?? 0}
                   </div>

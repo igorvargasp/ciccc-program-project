@@ -7,24 +7,120 @@
     "players": "Jugadores",
     "news": "Noticias",
     "simulator": "Simulador",
-    "lineup": "Alineaciones",
+    "lineup": "Alineación",
     "notifications": "Notificaciones",
     "profile": "Ajustes",
     "myteam": "Mi Equipo"
   },
+  "register": {
+    "heroTitle1": "PREDICE LO",
+    "heroTitle2": "IMPREDECIBLE.",
+    "heroSubtitle": "Únete a la plataforma de inteligencia futbolística más avanzada del mundo.",
+    "systemAccess": "ACCESO AL SISTEMA",
+    "createAccountTitle": "CREAR CUENTA",
+    "firstName": "NOMBRE",
+    "firstNamePlaceholder": "Introduce tu nombre",
+    "surname": "APELLIDO",
+    "surnamePlaceholder": "Introduce tu apellido",
+    "emailAddress": "CORREO ELECTRÓNICO",
+    "password": "CONTRASEÑA",
+    "securityLevel": "Nivel de seguridad:",
+    "confirmPassword": "CONFIRMAR",
+    "agreeText": "Acepto los",
+    "termsOfProtocol": "Términos del Protocolo",
+    "andPrivacyPolicy": "y la Política de Privacidad.",
+    "creatingAccount": "CREANDO CUENTA...",
+    "createAccountButton": "CREAR CUENTA",
+    "alreadyMember": "¿YA ERES MIEMBRO?",
+    "logIn": "INICIAR SESIÓN"
+  },
+  "features": {
+    "tacticalAnalysis": {
+      "name": "Análisis Táctico",
+      "description": "Mapas de calor en tiempo real y cambios de formación impulsados por redes neuronales.",
+      "tag": "Táctica"
+    },
+    "transferAdvisor": {
+      "name": "Asesor de Fichajes",
+      "description": "Modelado predictivo de valor de mercado y herramientas de comparación de ojeadores.",
+      "tag": "Mercado"
+    },
+    "scoutingRadar": {
+      "name": "Radar de Scouting",
+      "description": "Identifica talentos globales ocultos utilizando filtros algorítmicos avanzados.",
+      "tag": "Scouting"
+    },
+    "personalizedHub": {
+      "name": "Centro Personalizado",
+      "description": "Selección de equipo favorito y panel personalizado adaptado a tus pasiones futbolísticas.",
+      "tag": "Panel"
+    },
+    "matchCalendar": {
+      "name": "Calendario de Partidos",
+      "description": "Programación de próximos partidos con previas profundas y perspicaces.",
+      "tag": "Partidos"
+    },
+    "matchHistory": {
+      "name": "Historial de Partidos",
+      "description": "Datos históricos de partidos y desgloses de resultados anteriores de torneos globales.",
+      "tag": "Resultados"
+    },
+    "leagueTables": {
+      "name": "Tablas de Liga",
+      "description": "Clasificaciones en vivo y tablas de múltiples competiciones rastreadas al instante.",
+      "tag": "Clasificación"
+    },
+    "matchSimulator": {
+      "name": "Simulador de Partidos",
+      "description": "Simula resultados de partidos con ajustes dinámicos de clasificación en tiempo real.",
+      "tag": "Motor IA"
+    },
+    "dreamLineup": {
+      "name": "Creador de Alineaciones",
+      "description": "Creador de alineaciones personalizadas para configurar y visualizar tu equipo ideal.",
+      "tag": "Táctica"
+    },
+    "dualTheme": {
+      "name": "Motor de Doble Tema",
+      "description": "Soporte completo para interfaces oscuras y claras optimizadas para uso diurno o nocturno.",
+      "tag": "IU / UX"
+    },
+    "liveAlerts": {
+      "name": "Alertas en Vivo",
+      "description": "Notificaciones push en tiempo real para partidos en vivo y actualizaciones de tu equipo favorito.",
+      "tag": "Alertas"
+    },
+    "aiFormations": {
+      "name": "Formaciones IA",
+      "description": "Simula partidos y genera automáticamente contraestrategias para las alineaciones rivales.",
+      "tag": "Motor IA"
+    }
+  },
   "home": {
     "title": "Mi Equipo Favorito",
-    "subtitle": "Marcadores en vivo, estadísticas, noticias y simulaciones — todo en un lugar.",
-    "liveMatches": "En Vivo",
+    "subtitle": "Marcadores en vivo, estadísticas, noticias y simulaciones, todo en un solo lugar.",
+    "liveMatches": "En vivo",
     "upcomingMatches": "Próximos Partidos",
     "latestNews": "Últimas Noticias",
-    "seeAll": "Ver todo"
+    "seeAll": "Ver todo",
+    "playersBanner": {
+      "tag": "Base de Datos de Atletas",
+      "title": "Explora estadísticas detalladas de jugadores",
+      "subtitle": "Accede a perfiles completos, historial de partidos, goles, asistencias y datos de rendimiento de las mayores estrellas del fútbol mundial.",
+      "action": "Ver Jugadores"
+    },
+    "lineupsBanner": {
+      "tag": "Squad Builder",
+      "title": "Monta tu formación táctica personalizada",
+      "subtitle": "Crea tu once ideal, combinando estrellas de tu equipo del corazón o reuniendo a las mayores leyendas del fútbol mundial en un solo equipo.",
+      "action": "Crear Mi Equipo"
+    }
   },
   "search": {
     "placeholder": "Buscar equipos, jugadores…"
   },
   "common": {
-    "noData": "Sin datos disponibles",
+    "noData": "No hay datos disponibles",
     "loading": "Cargando…",
     "error": "Algo salió mal",
     "seeAll": "Ver todo",
@@ -36,8 +132,8 @@
     "vs": "VS",
     "goal_difference": "DG",
     "all": "Todos",
-    "showMore": "Ver {{n}} más",
-    "showLess": "Ver menos"
+    "showMore": "Mostrar más {{n}}",
+    "showLess": "Mostrar menos"
   },
   "settings": {
     "theme": "Cambiar tema",
@@ -51,8 +147,8 @@
     "lang_pt": "Português",
     "lang_es": "Español",
     "notifications": "Notificaciones",
-    "notifyMatches": "Notificarme sobre partidos en vivo",
-    "notifyTeamNews": "Notificarme sobre noticias del equipo",
+    "notifyMatches": "Notificar sobre partidos en vivo",
+    "notifyTeamNews": "Notificar sobre noticias del equipo",
     "favoriteTeams": "Equipos Favoritos",
     "account": "Cuenta",
     "signIn": "Inicia sesión para guardar preferencias",
@@ -60,17 +156,17 @@
   },
   "matches": {
     "title": "Partidos",
-    "live": "En Vivo",
-    "upcoming": "Próximo",
-    "finished": "Finalizado",
+    "live": "En vivo",
+    "upcoming": "Próximos",
+    "finished": "Finalizados",
     "all": "Todos",
     "kickoff": "Inicio",
     "halftime": "MT",
     "fulltime": "FT",
     "matchday": "Jornada {{n}}",
     "noMatches": "No se encontraron partidos",
-    "detail": "Detalles del partido",
-    "events": "Eventos del partido",
+    "detail": "Detalles del Partido",
+    "events": "Eventos del Partido",
     "venue": "Estadio"
   },
   "teams": {
@@ -80,22 +176,22 @@
     "squad": "Plantilla",
     "statistics": "Estadísticas",
     "standings": "Clasificación",
-    "founded": "Fundado",
+    "founded": "Fundación",
     "stadium": "Estadio",
     "country": "País"
   },
   "players": {
     "title": "Jugadores",
-    "searchPlaceholder": "Buscar jugadores…",
-    "noPlayers": "No se encontraron jugadores",
+    "searchPlaceholder": "Buscar nombre de jugador...",
+    "noPlayers": "No se encontraron jugadores que coincidan con los criterios.",
     "position": "Posición",
-    "allPositions": "Todas las posiciones",
+    "allPositions": "Todas las categorías",
     "nationality": "Nacionalidad",
     "dateOfBirth": "Fecha de nacimiento",
     "stats": "Estadísticas",
-    "appearances": "Partidos",
+    "appearances": "Apariciones",
     "goals": "Goles",
-    "assists": "Asist.",
+    "assists": "Asistencias",
     "minutes": "Minutos",
     "rating": "Valoración"
   },
@@ -103,14 +199,14 @@
     "title": "Competiciones",
     "noCompetitions": "No se encontraron competiciones",
     "standings": "Clasificación",
-    "realStandings": "Clasificación real",
-    "simulatedStandings": "Clasificación simulada",
+    "realStandings": "Tabla real",
+    "simulatedStandings": "Tabla simulada",
     "pos": "Pos",
     "team": "Equipo",
     "played": "PJ",
-    "won": "PG",
-    "drawn": "PE",
-    "lost": "PP",
+    "won": "G",
+    "drawn": "E",
+    "lost": "P",
     "goalsFor": "GF",
     "goalsAgainst": "GC",
     "gd": "DG",
@@ -122,24 +218,24 @@
     "noNews": "No hay noticias disponibles",
     "filterByTeam": "Filtrar por equipo",
     "allTeams": "Todos los equipos",
-    "realtimeActive": "Actualizaciones en vivo activas"
+    "realtimeActive": "Actualizaciones en tiempo real activas"
   },
   "simulator": {
     "title": "Simulador de Partidos",
-    "description": "Elige un partido programado, establece los marcadores y observa cómo cambiaría la clasificación.",
+    "description": "Elige un partido, establece el marcador y observa cómo cambiaría la clasificación.",
     "selectMatch": "Seleccionar partido",
     "homeScore": "Goles local",
     "awayScore": "Goles visitante",
     "simulate": "Simular",
     "projectedStandings": "Clasificación proyectada",
-    "history": "Historial de simulaciones",
-    "noSimulations": "Sin simulaciones aún",
+    "history": "Historial de simulación",
+    "noSimulations": "Aún no hay simulaciones",
     "signInRequired": "Inicia sesión para ejecutar simulaciones",
-    "loading": "Calculando clasificación…"
+    "loading": "Calculando tabla…"
   },
   "notifications": {
     "title": "Notificaciones",
-    "empty": "Sin notificaciones aún",
+    "empty": "No hay notificaciones todavía",
     "markAllRead": "Marcar todo como leído",
     "unread": "{{count}} sin leer"
   },
@@ -148,11 +244,26 @@
     "unauthorized": "Inicia sesión para acceder a esta página",
     "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
   },
-  "positions": {
-    "GK": "Portero",
-    "DEF": "Defensa",
-    "MID": "Centrocampista",
-    "FWD": "Delantero"
+  "login": {
+    "alertEmptyFields": "Por favor, introduce tu correo electrónico y contraseña.",
+    "alertInvalidCredentials": "Credenciales inválidas. Por favor, inténtalo de nuevo.",
+    "heroTitlePart1": "PREDICE LO",
+    "heroTitlePart2": "IMPREDECIBLE",
+    "heroDescription": "Predice resultados y descifra la telemetría de los equipos utilizando filtros algorítmicos de aprendizaje profundo y arquitecturas avanzadas de datos deportivos.",
+    "welcomeBack": "¡Bienvenido de nuevo!",
+    "securitySubtitle": "Proporciona tus credenciales de seguridad para acceder a la consola central.",
+    "emailLabel": "Correo Electrónico",
+    "passwordLabel": "Contraseña",
+    "rememberWorkstation": "Recordar esta estación de trabajo",
+    "recoverKey": "¿Recuperar clave?",
+    "authorizing": "Autorizando...",
+    "authorizeSession": "Autorizar Sesión",
+    "identityProvider": "Proveedor de Identidad",
+    "newToPlatform": "¿Nuevo en la plataforma?",
+    "requestRegistration": "Solicitar Registro",
+    "legalDetails": "Detalles Legales",
+    "privacyNode": "Nodo de Privacidad",
+    "securityStandard": "Estándar de Seguridad"
   },
   "modal": {
     "initialSetup": "Configuración Inicial",
@@ -161,42 +272,42 @@
     "changeFavoriteTeam": "Cambiar Equipo Favorito",
     "subtitleSimple": "Busca por nombre o filtra por competición para encontrar tu club favorito.",
     "clubName": "Nombre del Club",
-    "searchPlaceholder": "ej. Flamengo, Real Madrid...",
+    "searchPlaceholder": "ej: Flamengo, Real Madrid...",
     "competition": "Competición",
     "allCompetitions": "Todas las Competiciones",
     "resultsCount": "{{count}} clubes encontrados",
     "sortAZ": "Orden: A-Z",
     "sortZA": "Orden: Z-A",
     "querying": "Consultando base de datos...",
-    "noResults": "No se encontraron clubes que coincidan con tu criterio.",
+    "noResults": "No se encontró ningún club con los criterios seleccionados.",
     "confirmTeam": "Confirmar {{name}}",
     "selectTeamFirst": "Selecciona un Equipo Primero",
     "toastSuccess": "¡Equipo favorito actualizado con éxito!"
   },
   "matchDetail": {
-    "stadiumNotProvided": "Estadio no informado",
+    "stadiumNotProvided": "Estadio no proporcionado",
     "notificationsDisable": "Desactivar notificaciones",
     "notificationsEnable": "Recibir notificaciones en tiempo real",
     "matchday": "Jornada {{matchday}}",
-    "removeFavorite": "Quitar de favoritos",
-    "setMyTeam": "Definir como My Team",
+    "removeFavorite": "Eliminar de favoritos",
+    "setMyTeam": "Establecer como Mi Equipo",
     "finalResult": "Resultado Final",
     "standings": "Clasificación",
     "home": "Local",
     "away": "Visitante",
     "dateAndTime": "Fecha y Hora",
     "at": "a las",
-    "venue": "Estadio",
+    "venue": "Estadio del Partido",
     "finishedReport": "Informe del Partido Finalizado",
     "goal": "¡Gol!",
-    "finishedWithoutEvents": "El partido terminó con un marcador de {{homeScore}}–{{awayScore}}, pero los registros detallados de minutos y goleadores no se completaron en la base de datos para este encuentro.",
+    "finishedWithoutEvents": "El partido terminó con un marcador de {{homeScore}}–{{awayScore}}, pero los registros detallados de minutos y goleadores no se cargaron en la base de datos para este encuentro.",
     "upcomingExpectations": "Expectativas y Previa",
-    "upcomingDescription": "Partido programado. Sigue las estadísticas de los equipos a continuación mientras comienza el juego.",
-    "winRate": "Win Rate",
-    "goalsFor": "Goles Favor",
-    "goalsAgainst": "Goles Contra",
+    "upcomingDescription": "Partido programado. Sigue las estadísticas del equipo a continuación mientras comienza el juego.",
+    "winRate": "Tasa de Victoria",
+    "goalsFor": "Goles a Favor",
+    "goalsAgainst": "Goles en Contra",
     "homeWins": "V. Local",
-    "awayWins": "V. Fuera"
+    "awayWins": "V. Visitante"
   },
   "lineup": {
     "tacticalManagement": "Gestión Táctica",
@@ -207,14 +318,14 @@
     "saveLineup": "Guardar Alineación",
     "design": "Diseño:",
     "formation": "Formación:",
-    "customNotice": "¡Arrastra y suelta las tarjetas de jugadores en cualquier lugar del campo para crear tu diseño personalizado!",
+    "customNotice": "¡Arrastra y suelta las tarjetas de los jugadores en cualquier lugar del campo para crear tu diseño personalizado!",
     "headCoach": "Entrenador Principal",
     "editProfile": "Editar perfil",
     "substitutesBench": "Banquillo de Suplentes (+5)",
-    "clickToAdd": "Haz clic para añadir",
-    "sub": "Suplente",
+    "clickToAdd": "Hacer clic para añadir",
+    "sub": "Supl",
     "savedLineups": "Alineaciones Guardadas",
-    "noSavedLineups": "Aún no hay alineaciones guardadas. Forma tu equipo y haz clic en \"Guardar Alineación\".",
+    "noSavedLineups": "Aún no hay alineaciones guardadas. Forma tu plantilla y haz clic en \"Guardar Alineación\".",
     "coachModalTitle": "Configurar Cuerpo Técnico",
     "coachModalDesc": "Configura los detalles de tu entrenador antes de gestionar tu alineación táctica.",
     "coachNameLabel": "Nombre del Entrenador",
@@ -222,6 +333,20 @@
     "continueButton": "Continuar a la Alineación",
     "loadLineup": "Cargar Alineación",
     "delete": "Eliminar",
+    "captainBadge": "CAPITÁN (C)",
+    "selectFormation": "Seleccionar Formación Táctica",
+    "selectFormationDesc": "Elige la formación estructural para tu alineación titular.",
+    "active": "Activo",
+    "formations": {
+      "balancedAttack": "Esquema de ataque equilibrado con extremos",
+      "classicBlock": "Bloque clásico rígido y sólido",
+      "midfieldControl": "Fuerte control del centro del campo y contragolpe",
+      "wingBackDomination": "Dominio de carrileros con doble delantero",
+      "defensiveShield": "Escudo defensivo con centrocampistas abiertos",
+      "ultraOffensive": "Ultra ofensivo con tres delanteros",
+      "modernPivot": "Doble pivote moderno con centrocampista ofensivo",
+      "freePlacement": "Modo de colocación libre con arrastrar y soltar para cada jugador"
+    },
     "toast": {
       "fillAll": "¡Por favor, completa las 11 posiciones titulares antes de guardar!",
       "saved": "¡Alineación guardada con éxito!",
@@ -234,5 +359,29 @@
       "formationChanged": "Formación cambiada a",
       "captainSet": "¡ahora es el capitán del equipo! (C)"
     }
+  },
+  "positions": {
+    "GK": "Portero",
+    "CB": "Defensa Central",
+    "LB": "Lateral Izquierdo",
+    "RB": "Lateral Derecho",
+    "LWB": "Carrilero Izquierdo",
+    "RWB": "Carrilero Derecho",
+    "CDM": "Centrocampista Defensivo",
+    "CM": "Centrocampista Central",
+    "CAM": "Centrocampista Ofensivo",
+    "LM": "Interior Izquierdo",
+    "RM": "Interior Derecho",
+    "LW": "Extremo Izquierdo",
+    "RW": "Extremo Derecho",
+    "ST": "Delantero Centro",
+    "CF": "Segundo Delantero",
+    "DEF": "Defensa",
+    "MID": "Centrocampista",
+    "FWD": "Delantero"
+  },
+  "market": {
+    "globalMarket": "Mercado Global",
+    "searchTeamPlaceholder": "Busca y selecciona un equipo en todo el mundo..."
   }
 }

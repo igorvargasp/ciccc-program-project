@@ -7,10 +7,10 @@ import {
   ArrowDownAZ,
   ArrowUpAZ,
   Filter,
-  Users,
   Building2,
 } from "lucide-react";
 import type { LineupSlotPlayer as Player } from "@/types";
+import { useTranslation } from "react-i18next";
 
 const POSITIONS = ["GK", "DEF", "MID", "FWD"];
 
@@ -44,6 +44,7 @@ interface PlayerSearchModalProps {
   onClose: () => void;
   onSelectPlayer: (player: Player) => void;
   positionFilter?: string;
+  excludePlayerIds?: (string | number)[];
 }
 
 export default function PlayerSearchModal({
@@ -51,11 +52,13 @@ export default function PlayerSearchModal({
   onClose,
   onSelectPlayer,
   positionFilter,
+  excludePlayerIds = [],
 }: PlayerSearchModalProps) {
+  const { t } = useTranslation();
+
   const [activeTab, setActiveTab] = useState<"my-team" | "global">("my-team");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Estados para a busca e seleção dinâmica de times no Global Market
   const [teamSearchQuery, setTeamSearchQuery] = useState("");
   const [teamResults, setTeamResults] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
@@ -69,12 +72,11 @@ export default function PlayerSearchModal({
   const [favoriteTeamId, setFavoriteTeamId] = useState<string | null>(null);
   const [favoriteTeamName, setFavoriteTeamName] = useState<string>("My Team");
 
-  // Resetar filtros ao trocar de aba
   useEffect(() => {
     setSearchTerm("");
     setTeamSearchQuery("");
     setSelectedTeam(null);
-    setTeamResults(false as any);
+    setTeamResults([]);
     setShowTeamDropdown(false);
   }, [activeTab]);
 
@@ -84,7 +86,6 @@ export default function PlayerSearchModal({
     }
   }, [isOpen, positionFilter]);
 
-  // Carregar time favorito do localStorage
   useEffect(() => {
     if (!isOpen) return;
     const savedFav = localStorage.getItem("favorite_team");
@@ -99,7 +100,6 @@ export default function PlayerSearchModal({
     }
   }, [isOpen]);
 
-  // Buscar times dinamicamente ao digitar no Global Market
   useEffect(() => {
     if (activeTab !== "global" || teamSearchQuery.length < 2 || selectedTeam) {
       setTeamResults([]);
@@ -114,7 +114,6 @@ export default function PlayerSearchModal({
           `/api/teams?search=${encodeURIComponent(teamSearchQuery)}`,
         );
         const result = await response.json();
-        // Garante que pegamos um array de times
         const teamsData = result.data || result || [];
         setTeamResults(teamsData);
         setShowTeamDropdown(true);
@@ -129,7 +128,6 @@ export default function PlayerSearchModal({
     return () => clearTimeout(delay);
   }, [teamSearchQuery, activeTab, selectedTeam]);
 
-  // Buscar Jogadores com base nos filtros ativos
   useEffect(() => {
     if (!isOpen) return;
 
@@ -144,10 +142,8 @@ export default function PlayerSearchModal({
           params.append("teamId", String(favoriteTeamId));
         } else if (activeTab === "global") {
           if (selectedTeam) {
-            // Se um time foi selecionado pelo dropdown, filtra pelo ID do time
             params.append("teamId", String(selectedTeam.id));
           } else if (teamSearchQuery) {
-            // Fallback caso o usuário digite mas não clique (opcional)
             params.append("teamName", teamSearchQuery);
           }
         }
@@ -187,57 +183,66 @@ export default function PlayerSearchModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-[#14171c] border border-[#414755]/40 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4">
+      <div className="bg-[#14171c] border border-[#414755]/40 rounded-xl w-full max-w-lg shadow-2xl flex flex-col h-[90vh] sm:max-h-[85vh]">
+        {/* Cabeçalho */}
         <div className="flex items-center justify-between p-4 border-b border-[#414755]/30">
           <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em]">
-            Select Player
+            {t("lineup.clickToAdd") || "Select Player"}
           </h3>
           <button
             onClick={onClose}
-            className="text-[#8b90a0] hover:text-white cursor-pointer"
+            className="text-[#8b90a0] hover:text-white cursor-pointer p-1"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Abas (My Team / Global Market) */}
         <div className="px-4 pt-3">
           <div className="flex bg-[#0d0f12] p-1 rounded-lg border border-[#414755]/30">
             <button
               onClick={() => setActiveTab("my-team")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 px-2 text-[11px] sm:text-xs font-bold rounded-md transition-all cursor-pointer truncate ${
                 activeTab === "my-team"
                   ? "bg-[#00d2fd]/20 text-[#00d2fd] border border-[#00d2fd]/50"
                   : "text-[#8b90a0] hover:text-white"
               }`}
             >
-              <Shield className="w-3.5 h-3.5" /> {favoriteTeamName}
+              <Shield className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{favoriteTeamName}</span>
             </button>
             <button
               onClick={() => setActiveTab("global")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-bold rounded-md transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 px-2 text-[11px] sm:text-xs font-bold rounded-md transition-all cursor-pointer truncate ${
                 activeTab === "global"
                   ? "bg-[#00d2fd]/20 text-[#00d2fd] border border-[#00d2fd]/50"
                   : "text-[#8b90a0] hover:text-white"
               }`}
             >
-              <Globe2 className="w-3.5 h-3.5" /> Global Market
+              <Globe2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                {t("market.globalMarket") || "Global Market"}
+              </span>
             </button>
           </div>
         </div>
 
+        {/* Filtros e Buscas */}
         <div className="p-4 border-b border-[#414755]/30 space-y-3 relative">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#8b90a0]" />
             <input
-              placeholder="Search player name..."
+              placeholder={
+                t("players.searchPlaceholder") || "Search player name..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-[#0d0f12] border border-[#414755]/40 rounded-lg pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#00d2fd]"
             />
           </div>
 
-          {/* Campo de Busca de Time Dinâmico (Apenas no Global Market) */}
           {activeTab === "global" && (
             <div className="relative">
               <Building2 className="absolute left-3 top-2.5 w-4 h-4 text-[#8b90a0]" />
@@ -259,7 +264,10 @@ export default function PlayerSearchModal({
                 </div>
               ) : (
                 <input
-                  placeholder="Search and select a team worldwide..."
+                  placeholder={
+                    t("market.searchTeamPlaceholder") ||
+                    "Search and select a team worldwide..."
+                  }
                   value={teamSearchQuery}
                   onChange={(e) => {
                     setTeamSearchQuery(e.target.value);
@@ -269,7 +277,6 @@ export default function PlayerSearchModal({
                 />
               )}
 
-              {/* Dropdown de sugestões de times */}
               {showTeamDropdown &&
                 !selectedTeam &&
                 teamSearchQuery.length >= 2 && (
@@ -311,11 +318,11 @@ export default function PlayerSearchModal({
                 className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
               >
                 <option value="" className="bg-[#14171c]">
-                  All Categories
+                  {t("players.allPositions") || "All Categories"}
                 </option>
                 {POSITIONS.map((pos) => (
                   <option key={pos} value={pos} className="bg-[#14171c]">
-                    {pos}
+                    {t(`positions.${pos}`) || pos}
                   </option>
                 ))}
               </select>
@@ -325,6 +332,7 @@ export default function PlayerSearchModal({
                 setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"))
               }
               className="flex items-center gap-1.5 bg-[#0d0f12] border border-[#414755]/40 hover:border-[#00d2fd] px-3 py-2 rounded-lg text-xs font-bold text-white cursor-pointer transition-colors"
+              aria-label="Sort order"
             >
               {sortOrder === "asc" ? (
                 <ArrowDownAZ className="w-4 h-4 text-[#00d2fd]" />
@@ -335,46 +343,74 @@ export default function PlayerSearchModal({
           </div>
         </div>
 
+        {/* Lista de Jogadores */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading ? (
             <p className="text-center text-xs text-[#8b90a0] py-6">
-              Loading players...
+              {t("common.loading") || "Loading players..."}
             </p>
           ) : players.length === 0 ? (
             <p className="text-center text-xs text-[#8b90a0] py-6">
-              No players found matching criteria.
+              {t("players.noPlayers") || "No players found matching criteria."}
             </p>
           ) : (
-            players.map((player) => (
-              <div
-                key={player.id}
-                onClick={() => onSelectPlayer(player)}
-                className="flex items-center gap-3 p-2.5 rounded-lg bg-[#0d0f12] border border-[#414755]/20 hover:border-[#00d2fd] cursor-pointer transition-all group"
-              >
-                <div className="w-10 h-10 rounded-full bg-[#14171c] border border-[#414755]/40 flex items-center justify-center overflow-hidden shrink-0">
-                  {player.photoUrl ? (
-                    <img
-                      src={player.photoUrl}
-                      alt={player.fullName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-[10px] font-bold text-[#8b90a0]">
-                      {player.fullName.charAt(0)}
+            players.map((player) => {
+              const isAlreadySelected = excludePlayerIds.includes(player.id);
+              const translatedPos =
+                t(`positions.${player.position}`) || player.position;
+
+              return (
+                <div
+                  key={player.id}
+                  onClick={() => {
+                    if (!isAlreadySelected) {
+                      onSelectPlayer(player);
+                    }
+                  }}
+                  className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all ${
+                    isAlreadySelected
+                      ? "bg-[#0d0f12]/50 border-[#414755]/10 opacity-40 cursor-not-allowed"
+                      : "bg-[#0d0f12] border-[#414755]/20 hover:border-[#00d2fd] cursor-pointer group"
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#14171c] border border-[#414755]/40 flex items-center justify-center overflow-hidden shrink-0">
+                    {player.photoUrl ? (
+                      <img
+                        src={player.photoUrl}
+                        alt={player.fullName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[10px] font-bold text-[#8b90a0]">
+                        {player.fullName.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4
+                      className={`text-xs font-bold truncate transition-colors ${
+                        isAlreadySelected
+                          ? "text-[#8b90a0]"
+                          : "text-white group-hover:text-[#00d2fd]"
+                      }`}
+                    >
+                      {player.fullName}
+                    </h4>
+                    <p className="text-[10px] text-[#00d2fd] font-bold truncate">
+                      {translatedPos}{" "}
+                      {player.teamName ? `• ${player.teamName}` : ""}
+                    </p>
+                  </div>
+                  {isAlreadySelected && (
+                    <span className="text-[9px] font-bold uppercase bg-[#414755]/20 text-[#8b90a0] px-2 py-1 rounded shrink-0">
+                      {t("lineup.sub") === "Reserva"
+                        ? "Já escalado"
+                        : "Selected"}
                     </span>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-bold text-white truncate group-hover:text-[#00d2fd] transition-colors">
-                    {player.fullName}
-                  </h4>
-                  <p className="text-[10px] text-[#00d2fd] font-bold truncate">
-                    {player.position}{" "}
-                    {player.teamName ? `• ${player.teamName}` : ""}
-                  </p>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
