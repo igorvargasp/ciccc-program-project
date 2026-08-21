@@ -1,16 +1,24 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search, Sun, Moon, Globe } from 'lucide-react';
+import { Sun, Moon, Globe } from 'lucide-react';
 import { useAppStore } from '../../store/app';
+import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../NotificationBell';
 import AliScoreLogo from '../../assets/aliscore.svg';
 
+/**
+ * Greet by first name only: the account carries a single `name` field, and
+ * full names here are commonly three or four words, which would crowd the
+ * header on narrow screens.
+ */
+function firstNameOf(name?: string | null): string | null {
+  const first = name?.trim().split(/\s+/)[0];
+  return first || null;
+}
+
 export default function Header() {
-  const [query, setQuery] = useState('');
-  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { theme, setTheme, lang, setLang } = useAppStore();
+  const { user } = useAuth();
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
@@ -24,11 +32,7 @@ export default function Header() {
     localStorage.setItem('sfh-lang', next);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    if (q) navigate(`/teams?search=${encodeURIComponent(q)}`);
-  };
+  const greetingName = firstNameOf(user?.name) ?? user?.email?.split('@')[0];
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-surface/90 backdrop-blur-md border-b border-edge/12 flex items-center gap-3 px-4 md:px-6 flex-shrink-0">
@@ -38,18 +42,17 @@ export default function Header() {
         <span className="text-sm font-black text-foreground">AliScore</span>
       </div>
 
-      {/* Search */}
-      <form onSubmit={handleSearch} className="flex-1 max-w-sm">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('search.placeholder')}
-            className="w-full pl-9 pr-3 py-2 bg-surface-2 rounded-lg text-sm text-foreground placeholder:text-muted border border-edge/12 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20 transition-colors"
-          />
+      {/* Greeting. This replaced a search box that only ever searched clubs —
+          a header field implies it searches everything, and the Teams page
+          already has its own. Nothing renders while signed out. */}
+      {greetingName && (
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-foreground truncate">
+            {t('header.welcome', 'Welcome')},{' '}
+            <span className="font-bold">{greetingName}</span>
+          </p>
         </div>
-      </form>
+      )}
 
       {/* Right controls */}
       <div className="flex items-center gap-1.5 ml-auto">

@@ -440,5 +440,8 @@
     "errorPasswordMatch": "Passwords do not match.",
     "errorAgreeTerms": "You must agree to the Terms of Protocol.",
     "successRegister": "Account created successfully!"
+  },
+  "header": {
+    "welcome": "Welcome"
   }
 }

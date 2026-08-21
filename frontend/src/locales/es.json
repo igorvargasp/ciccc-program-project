@@ -440,5 +440,8 @@
     "errorPasswordMatch": "Las contraseñas no coinciden.",
     "errorAgreeTerms": "Debes aceptar los Términos de Uso.",
     "successRegister": "¡Cuenta creada con éxito!"
+  },
+  "header": {
+    "welcome": "Bienvenido"
   }
 }
