@@ -342,7 +342,10 @@ export function LineupPage() {
                   {t("lineup.design")}
                 </span>
                 <span className="text-brand font-black">
-                  {PITCH_STYLES[pitchStyle].name}
+                  {t(
+                    `lineup.pitchStyles.${pitchStyle}`,
+                    PITCH_STYLES[pitchStyle].name,
+                  )}
                 </span>
               </button>
 
@@ -367,7 +370,9 @@ export function LineupPage() {
                     }`}
                   >
                     {pitchStyle === key && <Check className="w-3 h-3" />}
-                    {value.name}
+                    {/* PITCH_STYLES carries an English name for use outside
+                        React; the label itself is translated by key. */}
+                    {t(`lineup.pitchStyles.${key}`, value.name)}
                   </button>
                 ))}
               </div>

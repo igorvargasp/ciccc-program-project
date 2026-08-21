@@ -167,7 +167,19 @@
     "noMatches": "No se encontraron partidos",
     "detail": "Detalles del Partido",
     "events": "Eventos del Partido",
-    "venue": "Estadio"
+    "venue": "Estadio",
+    "otherCompetitions": "Otras competiciones",
+    "showingTeam": "Mostrando partidos de:",
+    "allRounds": "Todas las jornadas",
+    "round": "Jornada",
+    "myTeam": "Mi equipo",
+    "scheduleTitle": "Calendario",
+    "liveMatch": "Partido en vivo",
+    "noLiveTeamMatches": "Tu equipo no está jugando en vivo ahora mismo.",
+    "nextMatches": "Próximos partidos",
+    "noUpcomingMatches": "No hay partidos programados.",
+    "results": "Resultados",
+    "noFinishedMatches": "No se encontraron partidos finalizados."
   },
   "teams": {
     "title": "Equipos",
@@ -231,7 +243,25 @@
     "history": "Historial de simulación",
     "noSimulations": "Aún no hay simulaciones",
     "signInRequired": "Inicia sesión para ejecutar simulaciones",
-    "loading": "Calculando tabla…"
+    "loading": "Calculando tabla…",
+    "tabs": {
+      "allMatches": "Todos los partidos",
+      "matchdays": "Jornadas",
+      "myTeam": "Mi equipo"
+    },
+    "filters": {
+      "competition": "Competición",
+      "allCompetitions": "Todas las competiciones",
+      "matchday": "Jornada",
+      "allMatchdays": "Todas las jornadas",
+      "matchdayNumber": "Jornada"
+    },
+    "selectMatchdayFixtures": "Elegir partidos de la jornada",
+    "noMatches": "No hay partidos programados disponibles.",
+    "otherCompetitions": "Otras competiciones",
+    "championship": "Campeonato",
+    "emptyStandingsPrompt": "Selecciona un partido a la izquierda, define el marcador arriba y ejecuta la simulación para ver la tabla actualizada.",
+    "clearHistory": "Borrar historial"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -242,7 +272,9 @@
   "errors": {
     "notFound": "Partido no encontrado.",
     "unauthorized": "Inicia sesión para acceder a esta página",
-    "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
+    "generic": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "fetchTeams": "Error al obtener los clubes del servidor.",
+    "connection": "Error de conexión al obtener los equipos del backend."
   },
   "login": {
     "alertEmptyFields": "Por favor, introduce tu correo electrónico y contraseña.",
@@ -307,7 +339,11 @@
     "goalsFor": "Goles a Favor",
     "goalsAgainst": "Goles en Contra",
     "homeWins": "V. Local",
-    "awayWins": "V. Visitante"
+    "awayWins": "V. Visitante",
+    "assist": "asistencia",
+    "headToHead": "Enfrentamientos directos",
+    "draws": "empates",
+    "matchStats": "Estadísticas"
   },
   "lineup": {
     "tacticalManagement": "Gestión Táctica",
@@ -357,7 +393,15 @@
       "coachNameError": "Por favor, introduce el nombre del entrenador",
       "coachUpdated": "¡Perfil del entrenador actualizado!",
       "formationChanged": "Formación cambiada a",
-      "captainSet": "¡ahora es el capitán del equipo! (C)"
+      "captainSet": "¡ahora es el capitán del equipo! (C)",
+      "coachPhotoRemoved": "Foto del entrenador eliminada"
+    },
+    "removePhoto": "Quitar foto",
+    "pitchStyles": {
+      "modern": "Moderno",
+      "classic": "Clásico",
+      "dark": "Oscuro",
+      "retro": "Retro"
     }
   },
   "positions": {
@@ -383,5 +427,18 @@
   "market": {
     "globalMarket": "Mercado Global",
     "searchTeamPlaceholder": "Busca y selecciona un equipo en todo el mundo..."
+  },
+  "auth": {
+    "passwordEmpty": "Vacía",
+    "passwordVeryWeak": "Muy débil",
+    "passwordWeak": "Débil",
+    "passwordFair": "Aceptable",
+    "passwordGood": "Buena",
+    "passwordStrong": "Fuerte",
+    "errorFillFields": "Completa todos los campos.",
+    "errorStrongerPassword": "Crea una contraseña más fuerte (debe incluir mayúscula, número o carácter especial).",
+    "errorPasswordMatch": "Las contraseñas no coinciden.",
+    "errorAgreeTerms": "Debes aceptar los Términos de Uso.",
+    "successRegister": "¡Cuenta creada con éxito!"
   }
 }
