@@ -142,6 +142,7 @@ export default function Matches() {
         competitionId,
         matchday: matchday ? Number(matchday) : undefined,
         limit: 100,
+        from: status === "scheduled" ? new Date().toISOString() : undefined,
       });
     },
     refetchInterval:

@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Newspaper,
@@ -12,10 +12,12 @@ import {
   Shield,
   Star,
   type LucideIcon,
+  LogOut,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "../../lib/utils";
 import AliScoreLogo from "../../assets/aliscore.svg";
+import { useAuth } from "../../context/AuthContext";
 
 const mainNav = [
   { to: "/home", icon: Home, label: "nav.home", exact: true },
@@ -76,6 +78,13 @@ function NavLink({ to, icon: Icon, label, exact, isSpecial }: NavLinkProps) {
 }
 
 export default function Sidebar() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
   return (
     <aside className="fixed inset-y-0 left-0 w-44 hidden lg:flex flex-col bg-surface border-r border-edge/12 z-40">
       <div className="flex items-center gap-2.5 px-4 h-16 border-b border-edge/12 flex-shrink-0">
@@ -108,6 +117,13 @@ export default function Sidebar() {
         {bottomNav.map((item) => (
           <NavLink key={item.to} {...item} />
         ))}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-red-400 hover:bg-surface-2 transition-all duration-150 w-full"
+        >
+          <LogOut className="w-[18px] h-[18px] flex-shrink-0" />
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
   );
