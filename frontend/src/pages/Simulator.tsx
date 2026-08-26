@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -20,6 +20,7 @@ import { createSimulation, listSimulations } from "../api/simulations";
 import { useTeamsMap } from "../hooks/useTeamsMap";
 import { useAppStore } from "../store/app";
 import { useAuth } from "../context/AuthContext";
+import { useFavoriteTeam } from "../hooks/useFavoriteTeam";
 import StandingsTable from "../components/StandingsTable";
 import Button from "../components/ui/Button";
 import { PageSpinner } from "../components/ui/Spinner";
@@ -51,6 +52,7 @@ export default function Simulator() {
   const token = useAppStore((s) => s.token);
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { teamId: favTeamId, competitionId: favCompetitionId } = useFavoriteTeam();
 
   const [activeTab, setActiveTab] = useState<
     "general" | "my-team" | "matchday"
@@ -65,6 +67,13 @@ export default function Simulator() {
     null,
   );
   const [aiInsight, setAiInsight] = useState<any>(null);
+
+  // Default competition to the favourite team's league once resolved
+  useEffect(() => {
+    if (favCompetitionId && !selectedCompetitionId) {
+      setSelectedCompetitionId(favCompetitionId);
+    }
+  }, [favCompetitionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch competitions
   const { data: competitions } = useQuery({
@@ -105,9 +114,7 @@ export default function Simulator() {
     enabled: true,
   });
 
-  const rawFavoriteTeamId =
-    user?.favoriteTeamId || localStorage.getItem("favorite_team_id");
-  const favoriteTeamId = rawFavoriteTeamId ? String(rawFavoriteTeamId) : null;
+  const favoriteTeamId = favTeamId || user?.favoriteTeamId || null;
 
   // My team scheduled matches
   const { data: myTeamMatches } = useQuery({

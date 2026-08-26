@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Search, User } from 'lucide-react';
@@ -9,6 +9,7 @@ import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import type { Position } from '../types';
 import { cn } from '../lib/utils';
+import { useFavoriteTeam } from '../hooks/useFavoriteTeam';
 
 const POSITIONS: (Position | 'all')[] = ['all', 'GK', 'DEF', 'MID', 'FWD'];
 
@@ -16,8 +17,16 @@ export default function Players() {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [position, setPosition] = useState<Position | 'all'>('all');
+  const { competitionId: favCompetitionId } = useFavoriteTeam();
   const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
   const [inputVal, setInputVal] = useState('');
+
+  // Default to the favourite team's league once resolved
+  useEffect(() => {
+    if (favCompetitionId && competitionId === undefined) {
+      setCompetitionId(favCompetitionId);
+    }
+  }, [favCompetitionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: players, isLoading } = useQuery({
     queryKey: ['players', { search, position, competitionId }],

@@ -3,32 +3,34 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Radio, Wifi } from 'lucide-react';
 import { listNews } from '../api/news';
-import { listTeams } from '../api/teams';
 import NewsCard from '../components/NewsCard';
+import CompetitionPills from '../components/CompetitionPills';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { useNewsRealtime } from '../hooks/useRealtime';
+import { useFavoriteTeam } from '../hooks/useFavoriteTeam';
 
 export default function News() {
   const { t } = useTranslation();
-  const [teamId, setTeamId] = useState<string | undefined>(undefined);
+  const { competitionId: favCompetitionId } = useFavoriteTeam();
+  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
   const [isLive, setIsLive] = useState(false);
   const prevCountRef = useRef(0);
 
-  // Real-time incoming articles
+  // Default to the favourite team's competition once resolved
+  useEffect(() => {
+    if (favCompetitionId && competitionId === undefined) {
+      setCompetitionId(favCompetitionId);
+    }
+  }, [favCompetitionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useNewsRealtime();
 
   const { data: news, isLoading, dataUpdatedAt } = useQuery({
-    queryKey: ['news', { teamId }],
-    queryFn: () => listNews({ teamId, limit: 30 }),
+    queryKey: ['news', { competitionId }],
+    queryFn: () => listNews({ competitionId, limit: 30 }),
     staleTime: 30_000,
     refetchInterval: 60_000,
-  });
-
-  const { data: teams } = useQuery({
-    queryKey: ['teams', { limit: 200 }],
-    queryFn: () => listTeams({ limit: 200 }),
-    staleTime: 5 * 60_000,
   });
 
   // Show "Live" badge when new articles arrive
@@ -54,34 +56,8 @@ export default function News() {
         )}
       </div>
 
-      {/* Team filter */}
-      {teams && teams.length > 0 && (
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setTeamId(undefined)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-              !teamId
-                ? 'bg-brand text-white border-brand'
-                : 'bg-surface-2 text-muted border-edge/12 hover:text-foreground'
-            }`}
-          >
-            {t('news.allTeams')}
-          </button>
-          {teams.slice(0, 12).map((team) => (
-            <button
-              key={team.id}
-              onClick={() => setTeamId(team.id === teamId ? undefined : team.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                teamId === team.id
-                  ? 'bg-brand text-white border-brand'
-                  : 'bg-surface-2 text-muted border-edge/12 hover:text-foreground'
-              }`}
-            >
-              {team.shortName ?? team.name}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Competition filter */}
+      <CompetitionPills value={competitionId} onChange={setCompetitionId} />
 
       {/* Live indicator */}
       <div className="flex items-center gap-1.5 text-xs text-muted">
@@ -106,3 +82,4 @@ export default function News() {
     </div>
   );
 }
+

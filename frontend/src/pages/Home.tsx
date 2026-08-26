@@ -17,6 +17,7 @@ import { listNews } from "../api/news";
 import { listCompetitions } from "../api/competitions";
 import { listTeams } from "../api/teams";
 import { listPlayers } from "../api/players";
+import { useFavoriteTeam } from "../hooks/useFavoriteTeam";
 
 import MatchCard from "../components/MatchCard";
 import NewsCard from "../components/NewsCard";
@@ -138,33 +139,10 @@ export default function Home() {
   const { t } = useTranslation();
   const teamsMap = useTeamsMap();
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [competitionId, setCompetitionId] = useState<string | undefined>(
-    undefined,
-  );
+  const { team: favoriteTeam, teamId: favoriteTeamId } = useFavoriteTeam();
+  const selectedTeam = favoriteTeam as Team | null;
+  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
   const [showAll, setShowAll] = useState(false);
-
-  useEffect(() => {
-    const loadFavoriteTeam = () => {
-      const stored = localStorage.getItem("favorite_team");
-      if (stored) {
-        try {
-          setSelectedTeam(JSON.parse(stored));
-        } catch (e) {
-          console.error("Error parsing favorite team", e);
-          setSelectedTeam(null);
-        }
-      } else {
-        setSelectedTeam(null);
-      }
-    };
-
-    loadFavoriteTeam();
-    window.addEventListener("favoriteTeamChanged", loadFavoriteTeam);
-    return () => {
-      window.removeEventListener("favoriteTeamChanged", loadFavoriteTeam);
-    };
-  }, []);
 
   useNewsRealtime();
 
@@ -204,10 +182,16 @@ export default function Home() {
     refetchInterval: 30_000,
   });
 
+  // When a team is selected, filter matches for that team only
   const { data: upcomingMatches, isLoading: loadingUpcoming } = useQuery({
-    queryKey: ["upcoming-matches", { competitionId }],
+    queryKey: ["upcoming-matches", { competitionId, teamId: favoriteTeamId }],
     queryFn: (): Promise<MatchListItem[]> =>
-      listMatches({ status: "scheduled", competitionId, limit: 50 }),
+      listMatches({
+        status: "scheduled",
+        teamId: favoriteTeamId ?? undefined,
+        competitionId: favoriteTeamId ? undefined : competitionId,
+        limit: 50,
+      }),
     staleTime: 60_000,
   });
 
@@ -275,7 +259,11 @@ export default function Home() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-extrabold text-foreground">
-            {t("home.upcomingMatches", "Upcoming Matches")}
+            {selectedTeam
+              ? t("home.upcomingMatchesTeam", "{{team}}'s Upcoming Matches", {
+                  team: selectedTeam.name,
+                })
+              : t("home.upcomingMatches", "Upcoming Matches")}
           </h2>
           <Link
             to="/matches"
@@ -285,7 +273,8 @@ export default function Home() {
           </Link>
         </div>
 
-        {competitions && competitions.length > 0 && (
+        {/* Show competition pills only when no team is selected */}
+        {!favoriteTeamId && competitions && competitions.length > 0 && (
           <div className="flex gap-2 flex-wrap mb-4">
             <button
               onClick={() => {
@@ -594,10 +583,7 @@ export default function Home() {
         isOpen={isTeamModalOpen}
         isFirstTime={false}
         currentTeam={selectedTeam}
-        onConfirm={(team) => {
-          setSelectedTeam(team);
-          setIsTeamModalOpen(false);
-        }}
+        onConfirm={() => setIsTeamModalOpen(false)}
         onClose={() => setIsTeamModalOpen(false)}
       />
     </div>

@@ -3,6 +3,7 @@ import type { NewsArticle } from '../types';
 
 export interface ListNewsParams {
   teamId?: string;
+  competitionId?: string;
   limit?: number;
 }
 

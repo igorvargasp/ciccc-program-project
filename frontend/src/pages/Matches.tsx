@@ -19,6 +19,7 @@ import {
 import { useTeamsMap } from "@/hooks/useTeamsMap";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import { useFavoriteTeam } from "@/hooks/useFavoriteTeam";
 
 type ViewMode = "status" | "my-team";
 type StatusFilter = "live" | "scheduled" | "finished";
@@ -35,66 +36,25 @@ export default function Matches() {
 
   const [viewMode, setViewMode] = useState<ViewMode>("status");
   const [status, setStatus] = useState<StatusFilter>("scheduled");
-  const [competitionId, setCompetitionId] = useState<string | undefined>(
-    undefined,
-  );
+  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
   const [matchday, setMatchday] = useState<string | undefined>(undefined);
 
   const [nextLimit, setNextLimit] = useState(6);
   const [resultsLimit, setResultsLimit] = useState(6);
 
   const teamsMap = useTeamsMap();
+  const { team: favoriteTeam, teamId: favTeamId, competitionId: favCompetitionId } = useFavoriteTeam();
 
-  const [favoriteTeam, setFavoriteTeam] = useState<{
-    id: string | number;
-    name: string;
-    competitionId?: string | number;
-  } | null>(() => {
-    const saved = localStorage.getItem("favorite_team");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-
+  // Default to the favourite team's league once resolved
   useEffect(() => {
-    const handleFavoriteChange = () => {
-      const saved = localStorage.getItem("favorite_team");
-      if (saved) {
-        try {
-          setFavoriteTeam(JSON.parse(saved));
-        } catch {
-          setFavoriteTeam(null);
-        }
-      } else {
-        setFavoriteTeam(null);
-      }
-    };
+    if (favCompetitionId && competitionId === undefined) {
+      setCompetitionId(favCompetitionId);
+    }
+  }, [favCompetitionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    window.addEventListener("favoriteTeamChanged", handleFavoriteChange);
-    return () => {
-      window.removeEventListener("favoriteTeamChanged", handleFavoriteChange);
-    };
-  }, []);
+  const selectedTeamId = favTeamId || user?.favoriteTeamId;
 
-  const selectedTeamId = favoriteTeam?.id || user?.favoriteTeamId;
-
-  const teamObj = selectedTeamId ? teamsMap.get(String(selectedTeamId)) : null;
-  const teamCompetitionId = String(
-    favoriteTeam?.competitionId ||
-      (teamObj as any)?.competitionId ||
-      (teamObj as any)?.leagueId ||
-      "",
-  );
-
-  const shouldShowMyTeamButton =
-    selectedTeamId &&
-    (!competitionId ||
-      (teamCompetitionId && String(competitionId) === teamCompetitionId));
+  const shouldShowMyTeamButton = !!selectedTeamId;
 
   const { data: competitionsData } = useQuery({
     queryKey: ["competitions"],

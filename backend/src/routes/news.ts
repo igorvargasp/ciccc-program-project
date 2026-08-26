@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
-import { newsArticles } from "../db/schema.js";
+import { newsArticles, seasons, standings } from "../db/schema.js";
 import { asyncHandler } from "../lib/async-handler.js";
 import { requireAuth } from "../middleware/auth.js";
 import { ingestArticles } from "../services/news.js";
@@ -11,19 +11,46 @@ export const newsRouter = Router();
 
 const listQuery = z.object({
   teamId: z.string().uuid().optional(),
+  competitionId: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(30),
 });
 
-// GET /api/news — latest articles, optionally filtered by team
+// GET /api/news — latest articles, optionally filtered by team or competition
 newsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const { teamId, limit } = listQuery.parse(req.query);
+    const { teamId, competitionId, limit } = listQuery.parse(req.query);
+
+    let teamFilter: ReturnType<typeof eq> | ReturnType<typeof inArray> | undefined;
+
+    if (teamId) {
+      teamFilter = eq(newsArticles.teamId, teamId);
+    } else if (competitionId) {
+      const seasonIds = (
+        await db
+          .select({ id: seasons.id })
+          .from(seasons)
+          .where(eq(seasons.competitionId, competitionId))
+      ).map((s) => s.id);
+
+      if (seasonIds.length) {
+        const teamIds = (
+          await db
+            .selectDistinct({ teamId: standings.teamId })
+            .from(standings)
+            .where(inArray(standings.seasonId, seasonIds))
+        ).map((s) => s.teamId);
+
+        if (teamIds.length) {
+          teamFilter = inArray(newsArticles.teamId, teamIds);
+        }
+      }
+    }
 
     const rows = await db
       .select()
       .from(newsArticles)
-      .where(teamId ? eq(newsArticles.teamId, teamId) : undefined)
+      .where(teamFilter)
       .orderBy(desc(newsArticles.publishedAt))
       .limit(limit);
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Search } from "lucide-react";
@@ -9,14 +9,21 @@ import CompetitionPills from "../components/CompetitionPills";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import EmptyState from "../components/ui/EmptyState";
 import { Users } from "lucide-react";
+import { useFavoriteTeam } from "../hooks/useFavoriteTeam";
 
 export default function Teams() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [input, setInput] = useState(searchParams.get("search") ?? "");
-  const [competitionId, setCompetitionId] = useState<string | undefined>(
-    undefined,
-  );
+  const { competitionId: favCompetitionId } = useFavoriteTeam();
+  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
+
+  // Default to the favourite team's league once resolved
+  useEffect(() => {
+    if (favCompetitionId && competitionId === undefined) {
+      setCompetitionId(favCompetitionId);
+    }
+  }, [favCompetitionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const search = searchParams.get("search") ?? undefined;
 

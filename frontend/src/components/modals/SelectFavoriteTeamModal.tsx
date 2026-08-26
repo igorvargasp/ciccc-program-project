@@ -159,7 +159,11 @@ export function SelectFavoriteTeamModal({
 
   const handleConfirm = () => {
     if (!selectedTeam) return;
-    localStorage.setItem("favorite_team", JSON.stringify(selectedTeam));
+    const record = {
+      ...selectedTeam,
+      ...(selectedCompetitionId ? { competitionId: selectedCompetitionId } : {}),
+    };
+    localStorage.setItem("favorite_team", JSON.stringify(record));
     window.dispatchEvent(new Event("favoriteTeamChanged"));
 
     // Dispara o Toast de sucesso traduzido

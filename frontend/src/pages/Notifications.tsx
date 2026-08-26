@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Bell, Trophy, Clock, Newspaper, Calendar, Star } from 'lucide-react';
@@ -33,7 +33,8 @@ export default function Notifications() {
   const teamId = favoriteTeam?.id ? String(favoriteTeam.id) : (user?.favoriteTeamId ? String(user.favoriteTeamId) : undefined);
   const teamName = favoriteTeam?.name || (teamId ? teamsMap.get(teamId as any)?.name : undefined);
 
-  const now = new Date().toISOString();
+  // Stable timestamp so the query key doesn't change on every render
+  const now = useMemo(() => new Date().toISOString(), []);
 
   const { data: results, isLoading: loadingResults } = useQuery({
     queryKey: ['matches', { teamId, status: 'finished', limit: 5 }],
@@ -97,9 +98,11 @@ export default function Notifications() {
             <div className="px-5 py-8 text-center text-sm text-muted">No upcoming fixtures scheduled.</div>
           ) : (
             upcoming.map((m, i) => {
-              const home = getTeamName(m.homeTeamId);
-              const away = getTeamName(m.awayTeamId);
-              const isMyTeam = (id: string) => id === teamId;
+              const home = m.homeTeam?.name ?? getTeamName(m.homeTeamId ?? '');
+              const away = m.awayTeam?.name ?? getTeamName(m.awayTeamId ?? '');
+              const isMyTeam = (id: string | undefined) => !!id && id === teamId;
+              const homeId = m.homeTeam?.id ?? m.homeTeamId;
+              const awayId = m.awayTeam?.id ?? m.awayTeamId;
               return (
                 <Link
                   key={m.id}
@@ -109,9 +112,9 @@ export default function Notifications() {
                   <Calendar className="w-4 h-4 text-[#00d2fd] flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">
-                      <span className={isMyTeam(m.homeTeamId) ? 'text-[#00d2fd]' : ''}>{home}</span>
+                      <span className={isMyTeam(homeId) ? 'text-[#00d2fd]' : ''}>{home}</span>
                       {' vs '}
-                      <span className={isMyTeam(m.awayTeamId) ? 'text-[#00d2fd]' : ''}>{away}</span>
+                      <span className={isMyTeam(awayId) ? 'text-[#00d2fd]' : ''}>{away}</span>
                     </p>
                     <p className="text-xs text-muted">{formatMatchDay(m.kickoffAt)} · {formatKickoff(m.kickoffAt)}{m.matchday ? ` · Matchday ${m.matchday}` : ''}</p>
                   </div>
@@ -135,12 +138,14 @@ export default function Notifications() {
             <div className="px-5 py-8 text-center text-sm text-muted">No recent results found.</div>
           ) : (
             results.map((m, i) => {
-              const home = getTeamName(m.homeTeamId);
-              const away = getTeamName(m.awayTeamId);
-              const isMyTeam = (id: string) => id === teamId;
+              const home = m.homeTeam?.name ?? getTeamName(m.homeTeamId ?? '');
+              const away = m.awayTeam?.name ?? getTeamName(m.awayTeamId ?? '');
+              const isMyTeam = (id: string | undefined) => !!id && id === teamId;
+              const homeId = m.homeTeam?.id ?? m.homeTeamId;
+              const awayId = m.awayTeam?.id ?? m.awayTeamId;
               const myTeamWon =
-                (isMyTeam(m.homeTeamId) && (m.homeScore ?? 0) > (m.awayScore ?? 0)) ||
-                (isMyTeam(m.awayTeamId) && (m.awayScore ?? 0) > (m.homeScore ?? 0));
+                (isMyTeam(homeId) && (m.homeScore ?? 0) > (m.awayScore ?? 0)) ||
+                (isMyTeam(awayId) && (m.awayScore ?? 0) > (m.homeScore ?? 0));
               const draw = m.homeScore === m.awayScore;
               const resultColor = draw ? 'text-muted' : myTeamWon ? 'text-green-400' : 'text-red-400';
               return (
@@ -152,11 +157,11 @@ export default function Notifications() {
                   <Trophy className="w-4 h-4 text-amber-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">
-                      <span className={isMyTeam(m.homeTeamId) ? 'text-[#00d2fd]' : ''}>{home}</span>
+                      <span className={isMyTeam(homeId) ? 'text-[#00d2fd]' : ''}>{home}</span>
                       {' '}
                       <span className={`font-black ${resultColor}`}>{m.homeScore ?? '?'} – {m.awayScore ?? '?'}</span>
                       {' '}
-                      <span className={isMyTeam(m.awayTeamId) ? 'text-[#00d2fd]' : ''}>{away}</span>
+                      <span className={isMyTeam(awayId) ? 'text-[#00d2fd]' : ''}>{away}</span>
                     </p>
                     <p className="text-xs text-muted">{formatMatchDay(m.kickoffAt)}{m.matchday ? ` · Matchday ${m.matchday}` : ''}</p>
                   </div>
