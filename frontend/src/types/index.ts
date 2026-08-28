@@ -97,7 +97,7 @@ export interface StandingRow {
   team: Pick<Team, 'id' | 'name' | 'shortName' | 'crestUrl'>;
 }
 
-export type MatchStatus = 'scheduled' | 'live' | 'finished';
+export type MatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed';
 
 export interface Match {
   id: string;
@@ -111,18 +111,27 @@ export interface Match {
   awayScore?: number | null;
   venue?: string;
   matchday?: number;
+  /**
+   * The listing endpoints join the competition and both clubs, so the calendar
+   * can group and render crests without a lookup per row. Optional because a
+   * fixture may have no season, and so older callers keep working.
+   */
+  competitionId?: string | null;
+  competition?: Pick<Competition, 'id' | 'name' | 'logoUrl'> | null;
+  season?: { id: string; label: string } | null;
+  homeTeam?: TeamRef;
+  awayTeam?: TeamRef;
 }
 
 /**
- * A match as it arrives from a listing endpoint. `GET /matches` returns team
- * ids only; `GET /teams/:id/matches` returns nested team objects instead — so
- * consumers must handle either side being present.
+ * A match from a listing endpoint. Same shape as `Match`, except the team ids
+ * may be absent where the payload nests the clubs instead — the nested objects
+ * themselves are declared on `Match`, since every listing endpoint now joins
+ * them.
  */
 export interface MatchListItem extends Omit<Match, 'homeTeamId' | 'awayTeamId'> {
   homeTeamId?: string;
   awayTeamId?: string;
-  homeTeam?: TeamRef;
-  awayTeam?: TeamRef;
 }
 
 export type MatchEventType = 'goal' | 'assist' | 'yellow' | 'red' | 'sub';
@@ -159,8 +168,8 @@ export interface MatchStat {
 export interface MatchDetail extends Match {
   competition?: Pick<Competition, 'id' | 'name' | 'logoUrl'> | null;
   season?: { id: string; label: string } | null;
-  homeTeam?: Pick<Team, 'id' | 'name' | 'shortName' | 'crestUrl'> | null;
-  awayTeam?: Pick<Team, 'id' | 'name' | 'shortName' | 'crestUrl'> | null;
+  homeTeam?: TeamRef;
+  awayTeam?: TeamRef;
   events: MatchEvent[];
   stats?: MatchStat[];
 }

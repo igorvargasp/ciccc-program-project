@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db/index.js";
 import { newsArticles, seasons, standings } from "../db/schema.js";
