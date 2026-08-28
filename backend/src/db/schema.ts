@@ -172,7 +172,7 @@ export const matches = pgTable("matches", {
     .notNull()
     .references(() => teams.id, { onDelete: "cascade" }),
   kickoffAt: timestamp("kickoff_at", { withTimezone: true }),
-  status: varchar("status", { length: 16 }).default("scheduled").notNull(), // scheduled | live | finished
+  status: varchar("status", { length: 16 }).default("scheduled").notNull(), // scheduled | live | finished | postponed
   homeScore: integer("home_score"),
   awayScore: integer("away_score"),
   venue: varchar("venue", { length: 120 }),

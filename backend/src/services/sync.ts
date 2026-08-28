@@ -17,9 +17,21 @@ import {
  * by `external_api_id`, so every sync is idempotent and safe to re-run.
  */
 
-function mapStatus(s: string): "scheduled" | "live" | "finished" {
-  if (s === "FINISHED") return "finished";
+/**
+ * A postponed or cancelled fixture is not scheduled: it keeps the kickoff time
+ * of the date it was meant to be played, so calling it scheduled leaves a match
+ * stranded in the past and any "next match" lookup picks it up. When the game
+ * is rearranged the provider returns it as TIMED/SCHEDULED with the new date,
+ * and the next sync makes it scheduled again.
+ */
+function mapStatus(
+  s: string,
+): "scheduled" | "live" | "finished" | "postponed" {
+  if (s === "FINISHED" || s === "AWARDED") return "finished";
   if (s === "IN_PLAY" || s === "PAUSED") return "live";
+  if (s === "POSTPONED" || s === "CANCELLED" || s === "SUSPENDED") {
+    return "postponed";
+  }
   return "scheduled";
 }
 

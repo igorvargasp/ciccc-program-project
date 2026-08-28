@@ -203,7 +203,10 @@ teamsRouter.get(
       .leftJoin(competitions, eq(seasons.competitionId, competitions.id))
       .where(and(...filters))
       .orderBy(asc(matches.kickoffAt))
-      .limit(50);
+      // Ascending from the season's start means a small window keeps only the
+      // oldest games: at 50, clubs playing 54 fixtures lost every upcoming
+      // one. Comfortably above the busiest club's season.
+      .limit(200);
 
     res.json({ data: teamMatches });
   }),

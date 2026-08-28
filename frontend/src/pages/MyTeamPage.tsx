@@ -236,13 +236,24 @@ export default function MyTeamPage() {
       )
     : null;
 
+  // Pick the next fixture by date, not simply the first one still flagged as
+  // scheduled: a postponed game keeps the kickoff time it was meant to have,
+  // so the earliest "scheduled" match can sit months in the past.
   const nextMatch = Array.isArray(teamMatches)
-    ? teamMatches.find(
-        (m: any) =>
-          m.status === "scheduled" ||
-          m.status === "TIMED" ||
-          m.status === "UPCOMING",
-      )
+    ? teamMatches
+        .filter((m: any) => {
+          const isUpcomingStatus =
+            m.status === "scheduled" ||
+            m.status === "TIMED" ||
+            m.status === "UPCOMING";
+          const kickoff = m.kickoffAt ?? m.utcDate;
+          return isUpcomingStatus && kickoff && new Date(kickoff) >= new Date();
+        })
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.kickoffAt ?? a.utcDate).getTime() -
+            new Date(b.kickoffAt ?? b.utcDate).getTime(),
+        )[0] ?? null
     : null;
 
   const displayMatch = liveMatch || nextMatch;
