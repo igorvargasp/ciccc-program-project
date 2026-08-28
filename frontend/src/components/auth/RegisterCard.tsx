@@ -240,7 +240,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       await register(email, password, fullName);
       toast.success(t("auth.successRegister", "Account created successfully!"));
 
-      // Abre o modal de escolha do time antes de finalizar a navegação para a home
+      // Open the favorite team selection modal before completing navigation to home
       setIsTeamModalOpen(true);
     } catch (error: unknown) {
       console.error("Registration error:", error);
@@ -630,7 +630,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         </section>
       </main>
 
-      {/* Modal de Seleção de Time Favorito pós-registro */}
+      {/* Post-registration Favorite Team Selection Modal */}
       <SelectFavoriteTeamModal
         isOpen={isTeamModalOpen}
         isFirstTime={true}

@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 interface CaptainModalProps {
   isOpen: boolean;
   onClose: () => void;
-  players: Record<number, Player>; // Aceita o objeto de jogadores da LineupPage
+  players: Record<number, Player>; // Accepts the lineup players object
   captainId: string | number | null;
   onSelectCaptain: (playerId: string | number, playerName: string) => void;
 }
@@ -21,7 +21,7 @@ export default function CaptainModal({
 
   if (!isOpen) return null;
 
-  // Converte o objeto de jogadores em um array filtrando apenas os slots preenchidos
+  // Converts the players object into an array filtering only filled slots
   const activeEntries = players
     ? Object.entries(players).filter(([_, player]) => player && player.id)
     : [];
@@ -29,7 +29,7 @@ export default function CaptainModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4">
       <div className="bg-surface border border-edge/25 w-full max-w-lg p-4 sm:p-6 space-y-3 sm:space-y-4 rounded-2xl shadow-2xl relative text-foreground">
-        {/* Cabeçalho */}
+        {/* Header */}
         <div className="flex justify-between items-center">
           <h3 className="text-base sm:text-lg font-black uppercase tracking-tight flex items-center gap-2">
             <Award className="w-5 h-5 text-amber-500 shrink-0" />
@@ -46,13 +46,13 @@ export default function CaptainModal({
           </button>
         </div>
 
-        {/* Descrição */}
+        {/* Description */}
         <p className="text-xs text-muted">
           {t("lineup.changeCaptain") ||
             "Choose a player from your starting XI to wear the captain armband."}
         </p>
 
-        {/* Lista de Jogadores */}
+        {/* Player List */}
         <div className="max-h-[60vh] sm:max-h-72 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
           {activeEntries.length === 0 ? (
             <p className="text-xs text-muted text-center py-8">

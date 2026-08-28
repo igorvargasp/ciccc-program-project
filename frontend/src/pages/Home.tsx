@@ -33,7 +33,7 @@ import type { MatchListItem, TeamRef, Team as TeamType } from "../types";
 
 const UPCOMING_PAGE_SIZE = 6;
 
-// Ordem exata desejada (em minúsculas para facilitar a comparação)
+// Exact desired order (in lowercase for easy comparison)
 const COMPETITION_ORDER = [
   "bundesliga",
   "la liga",
@@ -141,7 +141,9 @@ export default function Home() {
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const { team: favoriteTeam, teamId: favoriteTeamId } = useFavoriteTeam();
   const selectedTeam = favoriteTeam as Team | null;
-  const [competitionId, setCompetitionId] = useState<string | undefined>(undefined);
+  const [competitionId, setCompetitionId] = useState<string | undefined>(
+    undefined,
+  );
   const [showAll, setShowAll] = useState(false);
 
   useNewsRealtime();
@@ -156,11 +158,11 @@ export default function Home() {
         const nameA = a.name.toLowerCase();
         const nameB = b.name.toLowerCase();
 
-        const indexA = COMPETITION_ORDER.findIndex((ordem) =>
-          nameA.includes(ordem),
+        const indexA = COMPETITION_ORDER.findIndex((order) =>
+          nameA.includes(order),
         );
-        const indexB = COMPETITION_ORDER.findIndex((ordem) =>
-          nameB.includes(ordem),
+        const indexB = COMPETITION_ORDER.findIndex((order) =>
+          nameB.includes(order),
         );
 
         if (indexA !== -1 && indexB !== -1) {
@@ -214,7 +216,7 @@ export default function Home() {
         selectedTeam={selectedTeam}
       />
 
-      {/* Partidas Ao Vivo */}
+      {/* Live Matches */}
       {(loadingLive || (liveMatches && liveMatches.length > 0)) && (
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -255,7 +257,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* Partidas Agendadas */}
+      {/* Scheduled Matches */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-extrabold text-foreground">
@@ -442,7 +444,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. Players Section (Banner Interativo) */}
+      {/* 3. Players Section (Interactive Banner) */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -469,26 +471,24 @@ export default function Home() {
               <div className="space-y-2 max-w-xl">
                 <div className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase">
                   <User className="w-3.5 h-3.5" />
-                  <span>
-                    {t("home.playersBanner.tag", "Database de Atletas")}
-                  </span>
+                  <span>{t("home.playersBanner.tag", "Athlete Database")}</span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
                   {t(
                     "home.playersBanner.title",
-                    "Explore estatísticas detalhadas de jogadores",
+                    "Explore detailed player statistics",
                   )}
                 </h3>
                 <p className="text-xs sm:text-sm text-blue-100/80 leading-relaxed font-medium">
                   {t(
                     "home.playersBanner.subtitle",
-                    "Acesse perfis completos, histórico de atuações, gols, assistências e dados de performance dos maiores craques do futebol mundial.",
+                    "Access complete profiles, performance history, goals, assists, and performance data of the biggest stars in world football.",
                   )}
                 </p>
               </div>
 
               <div className="flex items-center gap-2 bg-blue-500 text-white font-black text-xs sm:text-sm px-5 py-3 rounded-xl transition-all duration-200 group-hover:bg-blue-400 group-hover:scale-105 shadow-lg shrink-0">
-                <span>{t("home.playersBanner.action", "Ver Jogadores")}</span>
+                <span>{t("home.playersBanner.action", "View Players")}</span>
                 <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </div>
             </div>
@@ -496,13 +496,13 @@ export default function Home() {
         </Link>
       </section>
 
-      {/* 4. Lineups Section (Banner Miniatura do Campo) */}
+      {/* 4. Lineups Section (Pitch Miniature Banner) */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5 text-brand" />
             <h2 className="text-lg font-extrabold text-foreground">
-              {t("nav.lineup", "Lineups & Táticas")}
+              {t("nav.lineup", "Lineups & Tactics")}
             </h2>
           </div>
           <Link
@@ -530,19 +530,19 @@ export default function Home() {
                 <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
                   {t(
                     "home.lineupsBanner.title",
-                    "Monte sua formação tática personalizada",
+                    "Build your custom tactical formation",
                   )}
                 </h3>
                 <p className="text-xs sm:text-sm text-emerald-100/80 leading-relaxed font-medium">
                   {t(
                     "home.lineupsBanner.subtitle",
-                    "Crie sua escalação dos sonhos, combinando estrelas do seu time do coração ou reunindo os maiores craques do futebol mundial em uma única equipe.",
+                    "Create your dream lineup, combining stars from your favorite team or gathering the greatest players in world football into a single squad.",
                   )}
                 </p>
               </div>
 
               <div className="flex items-center gap-2 bg-emerald-500 text-black font-black text-xs sm:text-sm px-5 py-3 rounded-xl transition-all duration-200 group-hover:bg-emerald-400 group-hover:scale-105 shadow-lg shrink-0">
-                <span>{t("home.lineupsBanner.action", "Criar Meu Time")}</span>
+                <span>{t("home.lineupsBanner.action", "Create My Team")}</span>
                 <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </div>
             </div>

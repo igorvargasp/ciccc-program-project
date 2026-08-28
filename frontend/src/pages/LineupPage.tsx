@@ -36,27 +36,27 @@ const getPositionByCoordinates = (
   x: number,
   y: number,
 ): { role: string; label: string } => {
-  // Se o Y for baixo (topo do campo visual), consideramos Defesa/Goleiro
+  // If Y is low (top of the visual field), we consider it Defense/Goalkeeper
   if (y < 20) {
-    return { role: "GK", label: "Goleiro" };
+    return { role: "GK", label: "Goalkeeper" };
   }
 
   if (y < 45) {
-    if (x < 30) return { role: "LB", label: "Lateral Esquerdo" };
-    if (x > 70) return { role: "RB", label: "Lateral Direito" };
-    return { role: "CB", label: "Zagueiro" };
+    if (x < 30) return { role: "LB", label: "Left Back" };
+    if (x > 70) return { role: "RB", label: "Right Back" };
+    return { role: "CB", label: "Center Back" };
   }
 
   if (y < 70) {
-    if (x < 30) return { role: "LM", label: "Meia Esquerda" };
-    if (x > 70) return { role: "RM", label: "Meia Direita" };
-    return { role: "CM", label: "Meio-Campista" };
+    if (x < 30) return { role: "LM", label: "Left Midfielder" };
+    if (x > 70) return { role: "RM", label: "Right Midfielder" };
+    return { role: "CM", label: "Central Midfielder" };
   }
 
-  // Parte inferior do campo (Ataque)
-  if (x < 30) return { role: "LW", label: "Ponta Esquerda" };
-  if (x > 70) return { role: "RW", label: "Ponta Direita" };
-  return { role: "ST", label: "Atacante" };
+  // Lower part of the field (Attack)
+  if (x < 30) return { role: "LW", label: "Left Winger" };
+  if (x > 70) return { role: "RW", label: "Right Winger" };
+  return { role: "ST", label: "Striker" };
 };
 
 export function LineupPage() {
@@ -94,7 +94,7 @@ export function LineupPage() {
   const [lineupName, setLineupName] = useState<string>("My Dream Team");
   const [favoriteTeam, setFavoriteTeam] = useState<any>(null);
 
-  // IDs de jogadores já selecionados (tanto titulares quanto reservas) para evitar duplicatas
+  // IDs of already selected players (both starters and substitutes) to avoid duplicates
   const selectedPlayerIds = [
     ...Object.values(lineupPlayers).map((p) => p.id),
     ...Object.values(subPlayers).map((p) => p.id),
@@ -280,14 +280,12 @@ export function LineupPage() {
         console.error(err);
       }
     }
-    toast.success(
-      t("lineup.toast.coachPhotoRemoved") || "Foto do técnico removida",
-    );
+    toast.success(t("lineup.toast.coachPhotoRemoved") || "Coach photo removed");
   };
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 space-y-4 md:space-y-6 pb-12">
-      {/* Header Limpo */}
+      {/* Clean Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-surface border border-edge/25 rounded-2xl p-4 md:p-5 gap-4 shadow-sm">
         <div className="w-full lg:w-auto">
           <span className="text-[10px] font-bold text-brand uppercase tracking-widest bg-brand/10 px-2.5 py-1 border border-brand/30 rounded-md">
@@ -328,7 +326,7 @@ export function LineupPage() {
 
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 items-start">
-        {/* Coluna Esquerda (Campo) */}
+        {/* Left Column (Pitch) */}
         <div className="xl:col-span-7 flex flex-col items-center bg-surface border border-edge/25 rounded-2xl p-3 sm:p-5 md:p-6 shadow-sm gap-4">
           <div className="w-full flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-edge/10">
             <div className="relative flex items-center">
@@ -402,7 +400,7 @@ export function LineupPage() {
             </div>
           )}
 
-          {/* Wrapper com scroll horizontal para telas menores */}
+          {/* Wrapper with horizontal scroll for smaller screens */}
           <div className="w-full overflow-x-auto pb-2">
             <div className="min-w-[540px] flex justify-center">
               <FootballPitch
@@ -418,9 +416,9 @@ export function LineupPage() {
           </div>
         </div>
 
-        {/* Coluna Direita (Coach, Subs, Saved) */}
+        {/* Right Column (Coach, Subs, Saved) */}
         <div className="xl:col-span-5 space-y-4 md:space-y-6">
-          {/* Box do Técnico */}
+          {/* Coach Box */}
           <div className="bg-surface border border-edge/25 rounded-2xl p-4 md:p-5 shadow-sm flex items-center gap-4">
             <div
               onClick={() => coachFileRef.current?.click()}
@@ -437,7 +435,7 @@ export function LineupPage() {
                   <button
                     type="button"
                     onClick={handleRemoveCoachPhoto}
-                    title={t("lineup.removePhoto") || "Remover foto"}
+                    title={t("lineup.removePhoto") || "Remove photo"}
                     className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-xs font-bold shadow-md cursor-pointer z-10"
                   >
                     ✕
@@ -473,7 +471,7 @@ export function LineupPage() {
             </div>
           </div>
 
-          {/* Banco de Reservas */}
+          {/* Substitutes Bench */}
           <div className="bg-surface border border-edge/25 rounded-2xl p-4 md:p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
@@ -529,7 +527,7 @@ export function LineupPage() {
             </div>
           </div>
 
-          {/* Escalações Salvas */}
+          {/* Saved Lineups */}
           <div className="bg-surface border border-edge/25 rounded-2xl p-4 md:p-5 shadow-sm space-y-3">
             <h3 className="text-xs font-black text-foreground uppercase tracking-widest">
               {t("lineup.savedLineups")} ({savedLineups.length})
@@ -580,7 +578,7 @@ export function LineupPage() {
         </div>
       </div>
 
-      {/* MODAL 1: SETUP DO TÉCNICO */}
+      {/* MODAL 1: COACH SETUP */}
       {isCoachModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-surface border border-edge/25 w-full max-w-md p-6 space-y-5 rounded-2xl shadow-2xl relative text-foreground">
@@ -606,7 +604,7 @@ export function LineupPage() {
                       <button
                         type="button"
                         onClick={handleRemoveCoachPhoto}
-                        title={t("lineup.removePhoto") || "Remover foto"}
+                        title={t("lineup.removePhoto") || "Remove photo"}
                         className="absolute top-0 right-0 w-7 h-7 bg-red-600 hover:bg-red-700 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-xs font-bold shadow-md cursor-pointer z-10"
                       >
                         ✕
@@ -657,7 +655,7 @@ export function LineupPage() {
         </div>
       )}
 
-      {/* MODAL 2: FORMAÇÃO */}
+      {/* MODAL 2: FORMATION */}
       <FormationModal
         isOpen={isFormationModalOpen}
         onClose={() => setIsFormationModalOpen(false)}
@@ -674,7 +672,7 @@ export function LineupPage() {
         }}
       />
 
-      {/* MODAL 3: JOGADOR (Com exclusão dos já selecionados) */}
+      {/* MODAL 3: PLAYER (Excluding already selected ones) */}
       <PlayerSearchModal
         isOpen={isPlayerModalOpen}
         onClose={() => setIsPlayerModalOpen(false)}
@@ -682,7 +680,7 @@ export function LineupPage() {
         excludePlayerIds={selectedPlayerIds}
       />
 
-      {/* MODAL 4: CAPITÃO */}
+      {/* MODAL 4: CAPTAIN */}
       <CaptainModal
         isOpen={isCaptainModalOpen}
         onClose={() => setIsCaptainModalOpen(false)}

@@ -109,7 +109,6 @@ export default function App() {
     <>
       <ThemeSync />
       <Routes>
-        {/* Rota inicial de Login */}
         <Route
           path="/"
           element={
@@ -119,7 +118,6 @@ export default function App() {
           }
         />
 
-        {/* Outras rotas públicas de autenticação */}
         <Route
           path="login"
           element={
@@ -147,7 +145,6 @@ export default function App() {
           element={<TermsPage onBack={() => navigate("/register")} />}
         />
 
-        {/* Rotas Protegidas / Com Layout Padrão */}
         <Route element={<RequireAuth />}>
           <Route path="home" element={<Home />} />
           <Route path="matches" element={<Matches />} />

@@ -27,7 +27,7 @@ export default function PlayerCard({ player, compact }: PlayerCardProps) {
           compact ? "p-3" : "p-4",
         )}
       >
-        {/* Foto, Avatar ou Número da Camisa */}
+        {/* Photo, Avatar and T=Shirt Number */}
         <div className="flex-shrink-0 w-11 h-11 rounded-full overflow-hidden bg-surface-2 border border-edge/20 flex items-center justify-center">
           {player.photoUrl ? (
             <img

@@ -185,7 +185,7 @@ export default function PlayerSearchModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4">
       <div className="bg-[#14171c] border border-[#414755]/40 rounded-xl w-full max-w-lg shadow-2xl flex flex-col h-[90vh] sm:max-h-[85vh]">
-        {/* Cabeçalho */}
+        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#414755]/30">
           <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em]">
             {t("lineup.clickToAdd") || "Select Player"}
@@ -199,7 +199,7 @@ export default function PlayerSearchModal({
           </button>
         </div>
 
-        {/* Abas (My Team / Global Market) */}
+        {/* (My Team / Global Market) */}
         <div className="px-4 pt-3">
           <div className="flex bg-[#0d0f12] p-1 rounded-lg border border-[#414755]/30">
             <button
@@ -229,7 +229,7 @@ export default function PlayerSearchModal({
           </div>
         </div>
 
-        {/* Filtros e Buscas */}
+        {/* Filters and Search */}
         <div className="p-4 border-b border-[#414755]/30 space-y-3 relative">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-[#8b90a0]" />
@@ -343,7 +343,7 @@ export default function PlayerSearchModal({
           </div>
         </div>
 
-        {/* Lista de Jogadores */}
+        {/* Players List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {loading ? (
             <p className="text-center text-xs text-[#8b90a0] py-6">

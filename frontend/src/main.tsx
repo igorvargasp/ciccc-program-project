@@ -28,7 +28,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
         >
           <AuthProvider>
-            {/* 2. Adicione o Toaster dentro dos contextos globais */}
             <Toaster
               position="top-right"
               reverseOrder={false}

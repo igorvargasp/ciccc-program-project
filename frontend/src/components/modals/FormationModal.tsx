@@ -60,7 +60,7 @@ export default function FormationModal({
           </button>
         </div>
 
-        {/* Lista de Formações */}
+        {/* Formations List */}
         <div className="grid grid-cols-1 gap-2.5 max-h-[55vh] sm:max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
           {FORMATIONS_DATA.map((fmt) => {
             const isSelected = currentFormation === fmt.id;

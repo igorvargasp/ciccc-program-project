@@ -177,7 +177,7 @@ interface FootballPitchProps {
     index: number,
     coords: { x: number; y: number },
   ) => void;
-  language?: Language; // Adicionado suporte a idioma opcional
+  language?: Language;
 }
 
 export default function FootballPitch({
@@ -188,7 +188,7 @@ export default function FootballPitch({
   pitchStyle = "modern",
   customPositions = {},
   onUpdateCustomPosition,
-  language = "pt", // Padrão português
+  language = "pt",
 }: FootballPitchProps) {
   const pitchRef = useRef<HTMLDivElement>(null);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
@@ -243,7 +243,6 @@ export default function FootballPitch({
         </div>
       )}
 
-      {/* Contenhador com responsividade otimizada para telas pequenas, médias e grandes */}
       <div
         ref={pitchRef}
         onMouseMove={handleDragMove}

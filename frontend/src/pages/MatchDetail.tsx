@@ -39,7 +39,7 @@ export default function MatchDetail() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
 
-  // Estados locais para Notificações da Partida e Time Favorito (My Team)
+  // Local states for Match Notifications and Favorite Team (My Team)
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [myTeamId, setMyTeamId] = useState<string | null>(() => {
     return localStorage.getItem("user_my_team_id");
@@ -136,7 +136,7 @@ export default function MatchDetail() {
         <ArrowLeft className="w-4 h-4" /> {t("common.back")}
       </Link>
 
-      {/* Competição */}
+      {/* Competition */}
       {match.competition && (
         <div className="flex items-center gap-2 bg-surface border border-edge/12 px-3 sm:px-4 py-2.5 rounded-xl shadow-sm">
           {match.competition.logoUrl ? (
@@ -154,7 +154,7 @@ export default function MatchDetail() {
         </div>
       )}
 
-      {/* Scoreboard / Placar Principal */}
+      {/* Scoreboard / Main Score */}
       <div
         className={cn(
           "bg-surface border rounded-2xl p-4 sm:p-6 transition-all shadow-lg",
@@ -166,7 +166,7 @@ export default function MatchDetail() {
         <div className="flex items-center justify-between mb-4 sm:mb-6 gap-2">
           <div className="flex items-center gap-2">{statusBadge}</div>
 
-          {/* Botão de Notificações (Sino) & Rodada */}
+          {/* Notifications Button (Bell) & Matchday */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsSubscribed(!isSubscribed)}
@@ -196,7 +196,7 @@ export default function MatchDetail() {
           </div>
         </div>
 
-        {/* Times e Placar Responsivo */}
+        {/* Teams and Responsive Score */}
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Home team */}
           <div className="flex flex-col items-center gap-2 flex-1 relative min-w-0">
@@ -303,9 +303,9 @@ export default function MatchDetail() {
           </div>
         </div>
 
-        {/* Informações detalhadas com Classificação Vertical e Estádio Ajustado */}
+        {/* Detailed info with Vertical Standings and Adjusted Stadium */}
         <div className="mt-6 pt-4 sm:mt-8 sm:pt-6 border-t border-edge/12 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-          {/* Bloco de Classificação (Empilhado / Vertical) */}
+          {/* Standings Block (Stacked / Vertical) */}
           <div className="bg-surface-2 p-3 rounded-xl flex flex-col items-center justify-center gap-2">
             <div className="flex items-center gap-1.5 text-[#00d2fd]">
               <Layers className="w-4 h-4" />
@@ -315,7 +315,7 @@ export default function MatchDetail() {
             </div>
 
             <div className="flex items-center justify-around w-full gap-2">
-              {/* Time da Casa */}
+              {/* Home Team */}
               <div className="flex flex-col items-center text-center">
                 <span className="text-xs font-semibold text-foreground">
                   {homeTeam?.shortName || t("matchDetail.home")}
@@ -331,7 +331,7 @@ export default function MatchDetail() {
                 vs
               </span>
 
-              {/* Time Visitante */}
+              {/* Away Team */}
               <div className="flex flex-col items-center text-center">
                 <span className="text-xs font-semibold text-foreground">
                   {awayTeam?.shortName || t("matchDetail.away")}
@@ -345,7 +345,7 @@ export default function MatchDetail() {
             </div>
           </div>
 
-          {/* Bloco de Data e Horário */}
+          {/* Date and Time Block */}
           <div className="bg-surface-2 p-3 rounded-xl flex flex-col items-center justify-center gap-1">
             <Calendar className="w-4 h-4 text-[#00d2fd]" />
             <span className="text-[10px] text-muted uppercase tracking-wider font-semibold">
@@ -357,7 +357,7 @@ export default function MatchDetail() {
             </span>
           </div>
 
-          {/* Bloco de Local do Jogo (Corrigido para evitar corte de texto) */}
+          {/* Match Venue Block (Fixed to prevent text clipping) */}
           <div className="bg-surface-2 p-3 rounded-xl flex flex-col items-center justify-center gap-1">
             <MapPin className="w-4 h-4 text-[#00d2fd]" />
             <span className="text-[10px] text-muted uppercase tracking-wider font-semibold">
@@ -370,7 +370,7 @@ export default function MatchDetail() {
         </div>
       </div>
 
-      {/* Relatório / Expectativas da Partida */}
+      {/* Match Report / Expectations */}
       {isFinished ? (
         <div className="bg-surface border border-edge/12 rounded-2xl p-4 sm:p-5 shadow-md space-y-4">
           <h3 className="text-xs font-black text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -428,8 +428,7 @@ export default function MatchDetail() {
                         <p
                           className={cn(
                             "font-semibold truncate",
-                            ev.type === "goal" &&
-                              "text-emerald-400 font-bold",
+                            ev.type === "goal" && "text-emerald-400 font-bold",
                           )}
                         >
                           {ev.playerName ??
@@ -439,8 +438,7 @@ export default function MatchDetail() {
                         </p>
                         {ev.assistName && (
                           <p className="text-xs text-muted truncate">
-                            {t("matchDetail.assist", "assistência")}:{" "}
-                            {ev.assistName}
+                            {t("matchDetail.assist", "assist")}: {ev.assistName}
                           </p>
                         )}
                       </>
@@ -478,7 +476,7 @@ export default function MatchDetail() {
 
           {context ? (
             <div className="space-y-4">
-              {/* Forma recente */}
+              {/* Recent Form */}
               <div className="grid grid-cols-2 gap-3">
                 {(
                   [
@@ -501,8 +499,10 @@ export default function MatchDetail() {
                             title={`${f.scored ?? "?"}–${f.conceded ?? "?"}`}
                             className={cn(
                               "w-6 h-6 rounded-md text-[11px] font-black flex items-center justify-center",
-                              f.result === "W" && "bg-emerald-500/20 text-emerald-400",
-                              f.result === "D" && "bg-amber-500/20 text-amber-400",
+                              f.result === "W" &&
+                                "bg-emerald-500/20 text-emerald-400",
+                              f.result === "D" &&
+                                "bg-amber-500/20 text-amber-400",
                               f.result === "L" && "bg-red-500/20 text-red-400",
                               !f.result && "bg-surface text-muted",
                             )}
@@ -520,11 +520,11 @@ export default function MatchDetail() {
                 ))}
               </div>
 
-              {/* Confronto direto */}
+              {/* Head-to-Head */}
               {context.headToHead.matches.length > 0 && (
                 <div className="bg-surface-2/60 border border-edge/10 rounded-xl p-3">
                   <p className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">
-                    {t("matchDetail.headToHead", "Confronto direto")} ·{" "}
+                    {t("matchDetail.headToHead", "Head-to-head")} ·{" "}
                     {context.headToHead.matches.length}
                   </p>
                   <div className="flex items-center gap-4 text-sm">
@@ -532,7 +532,7 @@ export default function MatchDetail() {
                       {context.headToHead.homeWins}
                     </span>
                     <span className="text-muted text-xs">
-                      {t("matchDetail.draws", "empates")}{" "}
+                      {t("matchDetail.draws", "draws")}{" "}
                       <strong className="text-foreground">
                         {context.headToHead.draws}
                       </strong>
@@ -544,26 +544,27 @@ export default function MatchDetail() {
                 </div>
               )}
 
-              {/* Posição na tabela */}
+              {/* Table Position */}
               {(context.standings.home || context.standings.away) && (
                 <div className="grid grid-cols-2 gap-3 text-xs">
-                  {([context.standings.home, context.standings.away] as const).map(
-                    (s: any, i: number) =>
-                      s ? (
-                        <div
-                          key={i}
-                          className="bg-surface-2/60 border border-edge/10 rounded-xl p-3"
-                        >
-                          <span className="text-lg font-black text-[#00d2fd]">
-                            {s.position}º
-                          </span>
-                          <span className="text-muted ml-2">
-                            {s.points} pts · {s.played} J
-                          </span>
-                        </div>
-                      ) : (
-                        <div key={i} />
-                      ),
+                  {(
+                    [context.standings.home, context.standings.away] as const
+                  ).map((s: any, i: number) =>
+                    s ? (
+                      <div
+                        key={i}
+                        className="bg-surface-2/60 border border-edge/10 rounded-xl p-3"
+                      >
+                        <span className="text-lg font-black text-[#00d2fd]">
+                          {s.position}º
+                        </span>
+                        <span className="text-muted ml-2">
+                          {s.points} pts · {s.played} P
+                        </span>
+                      </div>
+                    ) : (
+                      <div key={i} />
+                    ),
                   )}
                 </div>
               )}
@@ -576,11 +577,11 @@ export default function MatchDetail() {
         </div>
       )}
 
-      {/* Estatísticas da partida (remates, posse, faltas…) */}
+      {/* Match Statistics (shots, possession, fouls...) */}
       {match.stats && match.stats.length > 0 && (
         <div className="bg-surface border border-edge/12 rounded-2xl p-4 sm:p-5 shadow-md space-y-3">
           <h3 className="text-xs font-black text-[#00d2fd] uppercase tracking-[0.2em] flex items-center gap-2">
-            <span>📊</span> {t("matchDetail.matchStats", "Estatísticas")}
+            <span>📊</span> {t("matchDetail.matchStats", "Statistics")}
           </h3>
           <div className="space-y-2">
             {match.stats.map((s: any) => {
@@ -618,7 +619,7 @@ export default function MatchDetail() {
         </div>
       )}
 
-      {/* Bloco de Estatísticas Detalhadas dos Times */}
+      {/* Detailed Team Statistics Block */}
       {(homeTeam?.stats || awayTeam?.stats) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {homeTeam?.stats && (

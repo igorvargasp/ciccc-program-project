@@ -21,7 +21,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Novo estado profissional para gerenciar mensagens de erro inline
+  // New professional state to manage inline error messages
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isDark =
@@ -185,7 +185,7 @@ export function LoginCard({ onSwitchToRegister }: LoginCardProps) {
             >
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#00d2fd] via-[#4b8eff] to-transparent"></div>
 
-              {/* Banner de Erro Inline Profissional (Substitui o alert nativo) */}
+              {/* Professional Inline Error Banner (Replaces native alert) */}
               {errorMessage && (
                 <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 text-red-400 text-xs tracking-wide animate-fadeIn">
                   <span className="material-symbols-outlined text-base mt-0.5 shrink-0">

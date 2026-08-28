@@ -105,7 +105,6 @@ export default function Sidebar() {
           ))}
         </div>
 
-        {/* Linha divisória e item especial (My Team) */}
         <div className="pt-3 mt-3 border-t border-edge/12 space-y-0.5">
           {specialNav.map((item) => (
             <NavLink key={item.to} {...item} />

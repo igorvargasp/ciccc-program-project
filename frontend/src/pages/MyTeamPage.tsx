@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTeamsMap } from "@/hooks/useTeamsMap";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next"; // 1. Importar o hook de tradução
 import { getTeam } from "../api/teams";
 import { apiErrorMessage, suggestTransfers } from "../api/ai";
 import {
@@ -32,6 +33,7 @@ export default function MyTeamPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const teamsMap = useTeamsMap();
+  const { t } = useTranslation(); // 2. Inicializar a função t
 
   const [favoriteTeam, setFavoriteTeam] = useState<{
     id: string | number;
@@ -54,7 +56,7 @@ export default function MyTeamPage() {
     return null;
   });
 
-  // Estados do Transfer Advisor em miniatura
+  // Miniature Transfer Advisor states
   const [transferSuggestions, setTransferSuggestions] = useState<any[]>([]);
   const [loadingTransfers, setLoadingTransfers] = useState(false);
   const [transferError, setTransferError] = useState("");
@@ -71,7 +73,6 @@ export default function MyTeamPage() {
       } else {
         setFavoriteTeam(null);
       }
-      // Limpa as sugestões anteriores ao mudar de time
       setTransferSuggestions([]);
       setTransferError("");
     };
@@ -96,7 +97,7 @@ export default function MyTeamPage() {
     favoriteTeam?.name ||
     detailedTeam?.name ||
     (teamObj as any)?.name ||
-    "My Team";
+    t("myTeam.defaultTeamName", "My Team");
 
   const teamLogo =
     favoriteTeam?.logo ||
@@ -112,7 +113,7 @@ export default function MyTeamPage() {
     detailedTeam?.country ||
     (teamObj as any)?.country ||
     (teamObj as any)?.area?.name ||
-    "Global";
+    t("myTeam.globalCountry", "Global");
 
   const teamVenue =
     favoriteTeam?.venue ||
@@ -121,7 +122,7 @@ export default function MyTeamPage() {
     detailedTeam?.venue ||
     (teamObj as any)?.venue ||
     (teamObj as any)?.stadium ||
-    "Main Stadium";
+    t("myTeam.defaultStadium", "Main Stadium");
 
   const { data: teamMatches, isLoading: loadingMatches } = useQuery({
     queryKey: ["page-team-matches", selectedTeamId],
@@ -177,7 +178,6 @@ export default function MyTeamPage() {
     staleTime: 10 * 60_000,
   });
 
-  // Função para buscar as sugestões do Transfer Advisor via API (Com Correção de Auth 401)
   const handleFetchTransferSuggestions = async () => {
     if (!selectedTeamId) return;
 
@@ -187,7 +187,12 @@ export default function MyTeamPage() {
     try {
       setTransferSuggestions(await suggestTransfers(String(selectedTeamId)));
     } catch (err: unknown) {
-      setTransferError(apiErrorMessage(err, "Error fetching AI suggestions"));
+      setTransferError(
+        apiErrorMessage(
+          err,
+          t("myTeam.aiError", "Error fetching AI suggestions"),
+        ),
+      );
     } finally {
       setLoadingTransfers(false);
     }
@@ -202,17 +207,20 @@ export default function MyTeamPage() {
           </div>
           <div className="space-y-2">
             <h2 className="text-lg font-black uppercase tracking-wider text-foreground">
-              My Team
+              {t("myTeam.title", "My Team")}
             </h2>
             <p className="text-sm text-muted">
-              Select your favorite team to unlock the exclusive dashboard.
+              {t(
+                "myTeam.selectPrompt",
+                "Select your favorite team to unlock the exclusive dashboard.",
+              )}
             </p>
           </div>
           <button
             onClick={() => navigate("/teams")}
             className="px-5 py-2.5 rounded-xl bg-brand text-white font-medium text-sm hover:opacity-95 transition-all shadow-md cursor-pointer"
           >
-            Explore Teams
+            {t("myTeam.exploreTeams", "Explore Teams")}
           </button>
         </div>
       </div>
@@ -246,10 +254,14 @@ export default function MyTeamPage() {
   const awayTeamFromMap = awayId ? teamsMap.get(awayId) : null;
 
   const homeName =
-    displayMatch?.homeTeam?.name || (homeTeamFromMap as any)?.name || "Home";
+    displayMatch?.homeTeam?.name ||
+    (homeTeamFromMap as any)?.name ||
+    t("myTeam.home", "Home");
 
   const awayName =
-    displayMatch?.awayTeam?.name || (awayTeamFromMap as any)?.name || "Away";
+    displayMatch?.awayTeam?.name ||
+    (awayTeamFromMap as any)?.name ||
+    t("myTeam.away", "Away");
 
   const homeCrest =
     displayMatch?.homeTeam?.crest ||
@@ -269,10 +281,10 @@ export default function MyTeamPage() {
 
   const matchCompetition =
     displayMatch?.competition || displayMatch?.tournament;
-  // The API now sends the real competition on every fixture, so this fallback
-  // should no longer be what the user sees.
   const competitionName =
-    matchCompetition?.name || matchCompetition || "Official Competition";
+    matchCompetition?.name ||
+    matchCompetition ||
+    t("myTeam.officialCompetition", "Official Competition");
   const competitionLogo =
     matchCompetition?.logo ||
     matchCompetition?.crest ||
@@ -304,7 +316,7 @@ export default function MyTeamPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-xs font-black text-brand uppercase tracking-widest">
-                Official Dashboard
+                {t("myTeam.officialDashboard", "Official Dashboard")}
               </span>
               <span className="text-xs text-muted">•</span>
               <span className="text-xs font-medium text-muted flex items-center gap-1">
@@ -315,8 +327,8 @@ export default function MyTeamPage() {
               {teamName}
             </h1>
             <p className="text-xs text-muted flex items-center gap-1.5">
-              <Landmark className="w-3.5 h-3.5 text-amber-400" /> Stadium:{" "}
-              {teamVenue}
+              <Landmark className="w-3.5 h-3.5 text-amber-400" />{" "}
+              {t("myTeam.stadiumLabel", "Stadium:")} {teamVenue}
             </p>
           </div>
         </div>
@@ -326,20 +338,21 @@ export default function MyTeamPage() {
             onClick={() => navigate(`/teams/${selectedTeamId}`)}
             className="px-4 py-2 rounded-xl bg-brand text-white font-medium text-xs hover:opacity-95 transition-all shadow-md flex items-center gap-2 cursor-pointer"
           >
-            View Full Profile <ExternalLink className="w-3.5 h-3.5" />
+            {t("myTeam.viewFullProfile", "View Full Profile")}{" "}
+            <ExternalLink className="w-3.5 h-3.5" />
           </button>
           <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-semibold text-emerald-400">
-              Favorite
+              {t("myTeam.favorite", "Favorite")}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 2. Highlighted Information Grid (Matches & Club Advanced Summary) */}
+      {/* 2. Highlighted Information Grid */}
       <h3 className="text-sm font-bold uppercase tracking-wider text-muted px-1">
-        Matchday & Club Insights
+        {t("myTeam.matchdayInsights", "Matchday & Club Insights")}
       </h3>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div
@@ -353,16 +366,19 @@ export default function MyTeamPage() {
               ) : (
                 <Calendar className="w-4 h-4 text-brand" />
               )}
-              {liveMatch ? "Live Match Now" : "Next Match"}
+              {liveMatch
+                ? t("myTeam.liveMatchNow", "Live Match Now")
+                : t("myTeam.nextMatch", "Next Match")}
             </span>
             <span className="text-muted group-hover:text-brand flex items-center gap-1 text-xs transition-colors">
-              View matches calendar <ChevronRight className="w-3.5 h-3.5" />
+              {t("myTeam.viewMatchesCalendar", "View matches calendar")}{" "}
+              <ChevronRight className="w-3.5 h-3.5" />
             </span>
           </div>
 
           {loadingMatches ? (
             <div className="py-6 text-center text-sm text-muted animate-pulse">
-              Loading match information...
+              {t("myTeam.loadingMatches", "Loading match information...")}
             </div>
           ) : displayMatch ? (
             <div className="space-y-3">
@@ -402,14 +418,14 @@ export default function MyTeamPage() {
 
                 <div className="px-4 py-2 bg-surface border border-edge/30 rounded-lg text-center mx-4">
                   <span className="text-xs font-black text-brand tracking-widest block">
-                    {liveMatch ? "LIVE" : "VS"}
+                    {liveMatch ? t("myTeam.live", "LIVE") : "VS"}
                   </span>
                   <span className="text-xs font-semibold text-muted">
                     {displayMatch.utcDate || displayMatch.kickoffAt
                       ? new Date(
                           displayMatch.utcDate || displayMatch.kickoffAt,
                         ).toLocaleDateString()
-                      : "Coming soon"}
+                      : t("myTeam.comingSoon", "Coming soon")}
                   </span>
                 </div>
 
@@ -433,23 +449,27 @@ export default function MyTeamPage() {
             </div>
           ) : (
             <div className="bg-surface-2/50 border border-edge/20 rounded-xl p-6 text-center text-sm text-muted italic">
-              No scheduled matches found at the moment.
+              {t(
+                "myTeam.noMatches",
+                "No scheduled matches found at the moment.",
+              )}
             </div>
           )}
         </div>
 
-        {/* Club Summary com Estatísticas Reais */}
+        {/* Club Summary with Real Statistics */}
         <div className="bg-gradient-to-br from-surface to-surface-2 border border-edge/30 rounded-2xl p-6 flex flex-col justify-between shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Activity className="w-4 h-4 text-purple-400" /> Season Stats
+              <Activity className="w-4 h-4 text-purple-400" />{" "}
+              {t("myTeam.seasonStats", "Season Stats")}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-surface-2/60 p-3 rounded-xl border border-edge/10 flex flex-col items-center text-center">
               <Target className="w-4 h-4 text-emerald-400 mb-1" />
               <span className="text-[10px] text-muted uppercase tracking-wider">
-                Goals For
+                {t("myTeam.goalsFor", "Goals For")}
               </span>
               <span className="text-base font-black text-foreground">
                 {goalsScored}
@@ -458,7 +478,7 @@ export default function MyTeamPage() {
             <div className="bg-surface-2/60 p-3 rounded-xl border border-edge/10 flex flex-col items-center text-center">
               <ShieldAlert className="w-4 h-4 text-rose-400 mb-1" />
               <span className="text-[10px] text-muted uppercase tracking-wider">
-                Conceded
+                {t("myTeam.conceded", "Conceded")}
               </span>
               <span className="text-base font-black text-foreground">
                 {goalsConceded}
@@ -468,14 +488,19 @@ export default function MyTeamPage() {
           <div className="space-y-2 text-xs pt-1">
             <div className="flex justify-between py-1.5 border-b border-edge/10">
               <span className="text-muted flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5 text-brand" /> Win Rate:
+                <TrendingUp className="w-3.5 h-3.5 text-brand" />{" "}
+                {t("myTeam.winRate", "Win Rate:")}
               </span>
               <span className="font-bold text-foreground">{winRate}</span>
             </div>
             <div className="flex justify-between py-1.5">
-              <span className="text-muted">Total Roster:</span>
+              <span className="text-muted">
+                {t("myTeam.totalRoster", "Total Roster:")}
+              </span>
               <span className="font-semibold text-foreground">
-                {Array.isArray(teamPlayers) ? teamPlayers.length : "Available"}
+                {Array.isArray(teamPlayers)
+                  ? teamPlayers.length
+                  : t("myTeam.available", "Available")}
               </span>
             </div>
           </div>
@@ -491,11 +516,15 @@ export default function MyTeamPage() {
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
-                AI Transfer Advisor{" "}
+                {t("myTeam.aiTransferAdvisor", "AI Transfer Advisor")}{" "}
                 <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
               </h3>
               <p className="text-xs text-muted">
-                Smart reinforcement recommendations for {teamName}
+                {t(
+                  "myTeam.aiSubtitle",
+                  "Smart reinforcement recommendations for",
+                )}{" "}
+                {teamName}
               </p>
             </div>
           </div>
@@ -507,12 +536,13 @@ export default function MyTeamPage() {
           >
             {loadingTransfers ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing
-                Squad...
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />{" "}
+                {t("myTeam.analyzing", "Analyzing Squad...")}
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5" /> Generate AI Suggestions
+                <Sparkles className="w-3.5 h-3.5" />{" "}
+                {t("myTeam.generateAi", "Generate AI Suggestions")}
               </>
             )}
           </button>
@@ -536,7 +566,7 @@ export default function MyTeamPage() {
                     {s.weakPosition || s.position}
                   </span>
                   <span className="text-[11px] font-semibold text-emerald-400">
-                    Fit: {s.fitScore}%
+                    {t("myTeam.fit", "Fit")}: {s.fitScore}%
                   </span>
                 </div>
                 <h4 className="text-sm font-bold text-foreground">
@@ -549,8 +579,11 @@ export default function MyTeamPage() {
         ) : (
           !loadingTransfers && (
             <div className="bg-surface-2/40 border border-edge/20 rounded-xl p-5 text-center text-xs text-muted italic">
-              Click "Generate AI Suggestions" to analyze squad weaknesses and
-              explore ideal player signings tailored for {teamName}.
+              {t(
+                "myTeam.transferEmpty",
+                "Click 'Generate AI Suggestions' to analyze squad weaknesses and explore ideal player signings tailored for",
+              )}{" "}
+              {teamName}.
             </div>
           )
         )}
@@ -559,7 +592,7 @@ export default function MyTeamPage() {
       {/* 3. Quick Shortcuts */}
       <div className="space-y-3">
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted px-1">
-          Quick Access
+          {t("myTeam.quickAccess", "Quick Access")}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
@@ -572,9 +605,11 @@ export default function MyTeamPage() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-foreground group-hover:text-brand transition-colors">
-                  Lineup
+                  {t("myTeam.lineup", "Lineup")}
                 </h4>
-                <p className="text-xs text-muted">Squad and tactics</p>
+                <p className="text-xs text-muted">
+                  {t("myTeam.lineupSub", "Squad and tactics")}
+                </p>
               </div>
             </div>
             <ExternalLink className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -590,9 +625,11 @@ export default function MyTeamPage() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-foreground group-hover:text-brand transition-colors">
-                  Players
+                  {t("myTeam.players", "Players")}
                 </h4>
-                <p className="text-xs text-muted">Full roster</p>
+                <p className="text-xs text-muted">
+                  {t("myTeam.playersSub", "Full roster")}
+                </p>
               </div>
             </div>
             <ExternalLink className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -608,9 +645,11 @@ export default function MyTeamPage() {
               </div>
               <div>
                 <h4 className="text-sm font-bold text-foreground group-hover:text-brand transition-colors">
-                  Simulator
+                  {t("myTeam.simulator", "Simulator")}
                 </h4>
-                <p className="text-xs text-muted">Simulate matches</p>
+                <p className="text-xs text-muted">
+                  {t("myTeam.simulatorSub", "Simulate matches")}
+                </p>
               </div>
             </div>
             <ExternalLink className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -620,27 +659,26 @@ export default function MyTeamPage() {
 
       {/* 4. Standings Section */}
       <h3 className="text-sm font-bold uppercase tracking-wider text-muted px-1">
-        Standings
+        {t("myTeam.standings", "Standings")}
       </h3>
       <div className="bg-surface border border-edge/30 rounded-2xl p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Table className="w-4 h-4 text-brand" /> Team Standings
+            <Table className="w-4 h-4 text-brand" />{" "}
+            {t("myTeam.teamStandings", "Team Standings")}
           </h3>
           <button
             onClick={() => navigate(`/teams/${selectedTeamId}`)}
             className="text-xs text-muted hover:text-brand flex items-center gap-1 transition-colors cursor-pointer"
           >
-            View full <ChevronRight className="w-3.5 h-3.5" />
+            {t("myTeam.viewFull", "View full")}{" "}
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {Array.isArray(teamStandings) && teamStandings.length > 0 ? (
           <div className="space-y-3">
             {teamStandings.slice(0, 3).map((standing: any, idx: number) => {
-              // The endpoint returns the whole league table per competition,
-              // so the club's own numbers live in the row belonging to it —
-              // reading them off `standing` itself is what left this blank.
               const row =
                 standing.table?.find(
                   (r: any) => String(r.team?.id) === String(selectedTeamId),
@@ -655,20 +693,24 @@ export default function MyTeamPage() {
                     <span className="font-bold text-foreground block">
                       {standing.competition?.name ||
                         standing.tournament ||
-                        "League Championship"}
+                        t("myTeam.leagueChamp", "League Championship")}
                     </span>
                     <span className="text-xs text-muted">
-                      Played: {row.played ?? row.playedGames ?? 0} | Won:{" "}
-                      {row.won ?? 0} | Drawn: {row.drawn ?? row.draw ?? 0} |
-                      Lost: {row.lost ?? 0}
+                      {t("myTeam.played", "Played")}:{" "}
+                      {row.played ?? row.playedGames ?? 0} |{" "}
+                      {t("myTeam.won", "Won")}: {row.won ?? 0} |{" "}
+                      {t("myTeam.drawn", "Drawn")}: {row.drawn ?? row.draw ?? 0}{" "}
+                      |{t("myTeam.lost", "Lost")}: {row.lost ?? 0}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-black text-brand block bg-brand/10 px-3 py-1 rounded-lg border border-brand/25">
-                      {row.position ? `${row.position}º Place` : "Position N/A"}
+                      {row.position
+                        ? `${row.position}º ${t("myTeam.place", "Place")}`
+                        : t("myTeam.posNA", "Position N/A")}
                     </span>
                     <span className="text-[11px] text-muted mt-1 block">
-                      Points:{" "}
+                      {t("myTeam.points", "Points")}:{" "}
                       <strong className="text-foreground">
                         {row.points ?? 0}
                       </strong>
@@ -680,25 +722,30 @@ export default function MyTeamPage() {
           </div>
         ) : (
           <div className="bg-surface-2/40 border border-edge/20 rounded-xl p-6 text-center text-xs text-muted italic">
-            No standings data available for this club at the moment.
+            {t(
+              "myTeam.standingsEmpty",
+              "No standings data available for this club at the moment.",
+            )}
           </div>
         )}
       </div>
 
       {/* 5. News Section */}
       <h3 className="text-sm font-bold uppercase tracking-wider text-muted px-1">
-        News
+        {t("myTeam.news", "News")}
       </h3>
       <div className="bg-surface border border-edge/30 rounded-2xl p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Newspaper className="w-4 h-4 text-amber-400" /> Latest Club News
+            <Newspaper className="w-4 h-4 text-amber-400" />{" "}
+            {t("myTeam.latestNews", "Latest Club News")}
           </h3>
           <button
             onClick={() => navigate("/news")}
             className="text-xs text-muted hover:text-brand flex items-center gap-1 transition-colors cursor-pointer"
           >
-            View all <ChevronRight className="w-3.5 h-3.5" />
+            {t("myTeam.viewAll", "View all")}{" "}
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -718,14 +765,14 @@ export default function MyTeamPage() {
                 <span className="text-[10px] text-muted pt-2 border-t border-edge/10 block">
                   {news.date
                     ? new Date(news.date).toLocaleDateString()
-                    : "Recently"}
+                    : t("myTeam.recently", "Recently")}
                 </span>
               </div>
             ))}
           </div>
         ) : (
           <div className="bg-surface-2/40 border border-edge/20 rounded-xl p-6 text-center text-xs text-muted italic">
-            No recent news found for this club.
+            {t("myTeam.newsEmpty", "No recent news found for this club.")}
           </div>
         )}
       </div>

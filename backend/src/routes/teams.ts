@@ -146,7 +146,7 @@ teamsRouter.get(
     const teamId = req.params.id;
     const statusParam = req.query.status as string; // 'live' | 'scheduled' | 'finished'
 
-    // verify if the team exist
+    // Verify if the team exists
     const [team] = await db
       .select({ id: teams.id })
       .from(teams)
@@ -290,7 +290,7 @@ teamsRouter.get(
     const teamId = req.params.id;
     const { seasonId } = teamDetailQuery.parse(req.query);
 
-    // 1. Busca o time
+    // 1. Fetch the team
     const [team] = await db
       .select()
       .from(teams)
@@ -299,7 +299,7 @@ teamsRouter.get(
 
     if (!team) throw notFound("Team");
 
-    // 2. Determina qual season usar (se não passar na query, pega a temporada atual/isCurrent do time)
+    // 2. Determine which season to use (if not passed in query, fallback to team's current/isCurrent season)
     let targetSeasonId = seasonId;
     if (!targetSeasonId) {
       const [currentSeason] = await db
@@ -314,7 +314,7 @@ teamsRouter.get(
       }
     }
 
-    // 3. Monta os filtros para as partidas finalizadas da temporada
+    // 3. Build filters for the finished matches of the season
     const matchFilters = [
       or(eq(matches.homeTeamId, teamId), eq(matches.awayTeamId, teamId)),
       eq(matches.status, "finished"),
@@ -329,7 +329,7 @@ teamsRouter.get(
       .from(matches)
       .where(and(...matchFilters));
 
-    // 4. Variáveis de cálculo para as novas estatísticas
+    // 4. Calculation variables for the new statistics
     let wins = 0,
       draws = 0,
       losses = 0;

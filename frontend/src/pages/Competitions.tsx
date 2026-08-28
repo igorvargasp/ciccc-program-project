@@ -6,7 +6,7 @@ import { listCompetitions } from "../api/competitions";
 import { SkeletonCard } from "../components/ui/Skeleton";
 import EmptyState from "../components/ui/EmptyState";
 
-// Ordem exata desejada (em minúsculas para facilitar a comparação)
+// Exact desired order (in lowercase to facilitate comparison)
 const COMPETITION_ORDER = [
   "bundesliga",
   "la liga",
@@ -32,29 +32,29 @@ export default function Competitions() {
       const data = await listCompetitions();
       if (!data) return [];
 
-      // Ordena com base na sequência definida acima
+      // Sort based on the sequence defined above
       return [...data].sort((a, b) => {
         const nameA = a.name.toLowerCase();
         const nameB = b.name.toLowerCase();
 
-        // Encontra o índice correspondente na lista de ordem
-        const indexA = COMPETITION_ORDER.findIndex((ordem) =>
-          nameA.includes(ordem),
+        // Find the corresponding index in the order list
+        const indexA = COMPETITION_ORDER.findIndex((order) =>
+          nameA.includes(order),
         );
-        const indexB = COMPETITION_ORDER.findIndex((ordem) =>
-          nameB.includes(ordem),
+        const indexB = COMPETITION_ORDER.findIndex((order) =>
+          nameB.includes(order),
         );
 
-        // Se ambos forem encontrados na lista, ordena pela posição
+        // If both are found in the list, sort by position
         if (indexA !== -1 && indexB !== -1) {
           return indexA - indexB;
         }
-        // Se apenas o A estiver na lista, ele vem primeiro
+        // If only A is in the list, it comes first
         if (indexA !== -1) return -1;
-        // Se apenas o B estiver na lista, ele vem primeiro
+        // If only B is in the list, it comes first
         if (indexB !== -1) return 1;
 
-        // Se nenhum estiver na lista, mantém a ordem original alfabética/padrão
+        // If neither is in the list, maintain the original alphabetical/default order
         return nameA.localeCompare(nameB);
       });
     },

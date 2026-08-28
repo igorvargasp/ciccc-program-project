@@ -39,9 +39,7 @@ export function RegisterCardHeader() {
         <img
           src={isDark ? "/aliscore.svg" : "/aliscorelight.png"}
           alt="AliScore"
-          className={`object-contain ${
-            isDark ? "w-8 h-8" : "w-10 h-10" // Ajuste os valores conforme necessário para equilibrar visualmente
-          }`}
+          className={`object-contain ${isDark ? "w-8 h-8" : "w-10 h-10"}`}
         />
       </div>
 

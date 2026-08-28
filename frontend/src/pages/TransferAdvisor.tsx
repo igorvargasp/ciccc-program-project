@@ -1,5 +1,4 @@
 import { useState } from "react";
-// Importe seus ícones preferidos (lucide-react, por exemplo)
 import { BrainCircuit, Search, Loader2, AlertCircle } from "lucide-react";
 import {
   apiErrorMessage,
@@ -84,7 +83,7 @@ export function TransferAdvisorPage({
         </div>
       )}
 
-      {/* Grid de sugestões */}
+      {/* Sugestions Grid */}
       <div className="mt-8 grid gap-4">
         {suggestions.map((s: any, idx) => (
           <div

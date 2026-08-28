@@ -52,7 +52,7 @@ export function SelectFavoriteTeamModal({
   const [isCompetitionOpen, setIsCompetitionOpen] = useState(false);
   const competitionRef = useRef<HTMLDivElement>(null);
 
-  // Fecha o dropdown ao clicar fora
+  // Close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -161,12 +161,14 @@ export function SelectFavoriteTeamModal({
     if (!selectedTeam) return;
     const record = {
       ...selectedTeam,
-      ...(selectedCompetitionId ? { competitionId: selectedCompetitionId } : {}),
+      ...(selectedCompetitionId
+        ? { competitionId: selectedCompetitionId }
+        : {}),
     };
     localStorage.setItem("favorite_team", JSON.stringify(record));
     window.dispatchEvent(new Event("favoriteTeamChanged"));
 
-    // Dispara o Toast de sucesso traduzido
+    // Toast Success
     toast.success(
       t("modal.toastSuccess", "Favorite team updated successfully!"),
     );
@@ -183,7 +185,7 @@ export function SelectFavoriteTeamModal({
       <div className="bg-surface border border-edge/25 w-full max-w-2xl p-6 md:p-8 space-y-5 relative shadow-2xl rounded-2xl overflow-visible text-foreground">
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-brand via-brand/50 to-transparent rounded-t-2xl"></div>
 
-        {/* Cabeçalho */}
+        {/* Header */}
         <div className="flex justify-between items-start">
           <div>
             <span className="text-[10px] font-bold text-brand uppercase tracking-widest bg-brand/10 px-2.5 py-1 border border-brand/30 rounded-md">
@@ -215,9 +217,7 @@ export function SelectFavoriteTeamModal({
           )}
         </div>
 
-        {/* Grid de Filtros */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Busca por Nome */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-bold text-muted uppercase tracking-widest block">
               {t("modal.clubName", "Club Name")}
@@ -237,7 +237,6 @@ export function SelectFavoriteTeamModal({
             </div>
           </div>
 
-          {/* Dropdown Customizado: Competição */}
           <div className="space-y-1.5 relative" ref={competitionRef}>
             <label className="text-[11px] font-bold text-muted uppercase tracking-widest block">
               {t("modal.competition", "Competition")}
@@ -298,7 +297,6 @@ export function SelectFavoriteTeamModal({
           </div>
         </div>
 
-        {/* Barra secundária: Ordenação */}
         <div className="flex items-center justify-between pt-1">
           <span className="text-xs text-muted">
             {t("modal.resultsCount", "{{count}} clubs found", {
@@ -319,14 +317,14 @@ export function SelectFavoriteTeamModal({
           </button>
         </div>
 
-        {/* Mensagem de Erro */}
+        {/* Error Message */}
         {errorMessage && (
           <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">
             {errorMessage}
           </div>
         )}
 
-        {/* Lista de Resultados */}
+        {/* Result List */}
         <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
           {isLoading && (
             <div className="flex items-center justify-center gap-2 py-10 text-xs text-brand font-semibold">
@@ -384,7 +382,7 @@ export function SelectFavoriteTeamModal({
             })}
         </div>
 
-        {/* Botão de Confirmação */}
+        {/* Confirmations Button */}
         <button
           type="button"
           onClick={handleConfirm}
