@@ -24,7 +24,10 @@ function mapStatus(s: string): "scheduled" | "live" | "finished" {
 }
 
 function seasonLabel(season: { startDate: string; endDate: string }): string {
-  return `${season.startDate.slice(0, 4)}/${season.endDate.slice(2, 4)}`;
+  const startYear = season.startDate.slice(0, 4);
+  const endYear = season.endDate.slice(0, 4);
+  // Single calendar-year seasons (e.g. Brazil) → "2026"; cross-year → "2026/27".
+  return startYear === endYear ? startYear : `${startYear}/${endYear.slice(2)}`;
 }
 
 // ─────────────────────────── Upsert helpers ───────────────────────────
