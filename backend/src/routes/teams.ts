@@ -3,9 +3,6 @@ import { and, or, eq, asc, desc, ilike, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { db } from "../db/index.js";
-<<<<<<< HEAD
-import { competitions, players, seasons, standings, teams } from "../db/schema.js";
-=======
 import {
   competitions,
   matches,
@@ -15,7 +12,6 @@ import {
   standings,
   teams,
 } from "../db/schema.js";
->>>>>>> arturo
 import { asyncHandler } from "../lib/async-handler.js";
 import { notFound } from "../lib/http-error.js";
 
@@ -33,13 +29,6 @@ const teamDetailQuery = z.object({
 });
 
 // GET /api/teams — list/search teams
-//
-// TODO(favorite-team picker): this flat list is capped at 100 with no
-// pagination, so once all tracked leagues are synced (~120+ teams) a
-// "browse all" screen would silently miss some. For the onboarding picker,
-// add a grouped endpoint — e.g. GET /api/teams/by-competition returning each
-// league with its teams (join via competition_teams / standings) — and/or an
-// optional ?competitionId= filter plus offset-based pagination here.
 teamsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
@@ -103,8 +92,6 @@ teamsRouter.get(
     res.json({ data: squad });
   }),
 );
-<<<<<<< HEAD
-=======
 
 // GET /api/teams/:id/players — alias of /squad. The club dashboard asks for
 // this spelling; serving both avoids a 404 that the UI can only read as an
@@ -224,7 +211,6 @@ teamsRouter.get(
     res.json({ data: teamMatches });
   }),
 );
->>>>>>> arturo
 
 // GET /api/teams/:id/standings — the league table(s) the team competes in.
 teamsRouter.get(
@@ -299,8 +285,6 @@ teamsRouter.get(
     res.json({ data: result });
   }),
 );
-<<<<<<< HEAD
-=======
 
 // GET /api/teams/:id — team detail with dynamic detailed stats per season
 teamsRouter.get(
@@ -411,4 +395,3 @@ teamsRouter.get(
     });
   }),
 );
->>>>>>> arturo
