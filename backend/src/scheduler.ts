@@ -2,7 +2,9 @@ import cron from "node-cron";
 import { env } from "./config/env.js";
 import { buildDailyDigest } from "./services/digest.js";
 import { footballDataEnabled, trackedCompetitions } from "./services/football-data.js";
-import { pollLiveMatches, syncAll, syncFixtures } from "./services/sync.js";
+import { linkEventPlayers, syncMatchEvents } from "./services/match-events.js";
+import { backfillPlayerPhotos } from "./services/player-photos.js";
+import { pollLiveMatches, syncAll, syncFixtures, syncSquads } from "./services/sync.js";
 
 /**
  * Background jobs:
@@ -32,13 +34,42 @@ export function startScheduler(): void {
     if (n) console.log(`[live] broadcast ${n} in-play match update(s)`);
   }));
 
-  // Fixtures/results: top of every hour.
-  cron.schedule("0 * * * *", run("hourly", syncFixtures));
+  // Fixtures/results + squads: top of every hour.
+  cron.schedule("0 * * * *", run("hourly", async () => {
+    await syncFixtures();
+    await syncSquads();
+  }));
 
   // Daily full refresh + digest.
   cron.schedule(env.DAILY_DIGEST_CRON, run("daily", async () => {
     await syncAll();
     await buildDailyDigest();
+  }));
+
+  // Match reports for recently finished fixtures. Goals and cards aren't in
+  // football-data.org's free plan, so they come from TheSportsDB, matched on
+  // date and clubs. Runs shortly after the daily sync, once results have
+  // settled.
+  cron.schedule(env.MATCH_EVENTS_CRON, run("events", async () => {
+    const r = await syncMatchEvents();
+    // Attach our own player rows straight away, so a report never sits with
+    // bare names when the squad data to resolve them is already there.
+    const linked = await linkEventPlayers();
+    if (r.matched || linked.linkedPlayers) {
+      console.log(
+        `[events] ${r.matched}/${r.matchesConsidered} matched — ${r.eventsStored} events, ` +
+          `${r.statsStored} stats, ${linked.linkedPlayers} players linked`,
+      );
+    }
+  }));
+
+  // Player photos from TheSportsDB, in bounded batches. Runs after the daily
+  // sync so newly added squad members get picked up on the next tick.
+  cron.schedule(env.PLAYER_PHOTO_CRON, run("photos", async () => {
+    const r = await backfillPlayerPhotos();
+    if (r.scanned) {
+      console.log(`[photos] scanned ${r.scanned} — matched ${r.matched}, missed ${r.missed}`);
+    }
   }));
 
   console.log(

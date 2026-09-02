@@ -6,6 +6,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  real,
   text,
   timestamp,
   unique,
@@ -31,7 +32,9 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 320 }),
   displayName: varchar("display_name", { length: 120 }),
   avatarUrl: text("avatar_url"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
 
@@ -53,7 +56,9 @@ export const userPreferences = pgTable("user_preferences", {
   notifyMatches: boolean("notify_matches").default(true).notNull(),
   notifyTeamNews: boolean("notify_team_news").default(true).notNull(),
   dashboardLayout: jsonb("dashboard_layout"),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const translations = pgTable(
@@ -68,7 +73,11 @@ export const translations = pgTable(
     value: text("value").notNull(),
   },
   (t) => ({
-    uniqPerKey: uniqueIndex("translations_lang_ns_key_uq").on(t.languageId, t.namespace, t.key),
+    uniqPerKey: uniqueIndex("translations_lang_ns_key_uq").on(
+      t.languageId,
+      t.namespace,
+      t.key,
+    ),
   }),
 );
 
@@ -96,6 +105,18 @@ export const players = pgTable("players", {
   dateOfBirth: date("date_of_birth"),
   marketValue: numeric("market_value", { precision: 14, scale: 2 }),
   photoUrl: text("photo_url"),
+  // Which source supplied photo_url — "wikidata" (Commons, freely licensed) or
+  // "thesportsdb". Worth recording: the two differ in licensing, so you need to
+  // know which images are safe to reuse.
+  photoSource: varchar("photo_source", { length: 16 }),
+  // Photo sources that have already searched for this player and come back
+  // empty. Recorded per source so a run interrupted by one provider's rate
+  // limit doesn't re-run the providers that already finished.
+  photoSourcesTried: text("photo_sources_tried").array(),
+  // When every source had looked for this player and none found anything. Only
+  // set once the search is genuinely exhausted, so a player skipped behind a
+  // rate limit is retried rather than hidden for RECHECK_AFTER_DAYS.
+  photoCheckedAt: timestamp("photo_checked_at", { withTimezone: true }),
 });
 
 export const competitions = pgTable("competitions", {
@@ -131,14 +152,19 @@ export const competitionTeams = pgTable(
       .references(() => teams.id, { onDelete: "cascade" }),
   },
   (t) => ({
-    uniqSeasonTeam: uniqueIndex("competition_teams_season_team_uq").on(t.seasonId, t.teamId),
+    uniqSeasonTeam: uniqueIndex("competition_teams_season_team_uq").on(
+      t.seasonId,
+      t.teamId,
+    ),
   }),
 );
 
 export const matches = pgTable("matches", {
   id: uuid("id").defaultRandom().primaryKey(),
   externalApiId: varchar("external_api_id", { length: 64 }).unique(),
-  seasonId: uuid("season_id").references(() => seasons.id, { onDelete: "cascade" }),
+  seasonId: uuid("season_id").references(() => seasons.id, {
+    onDelete: "cascade",
+  }),
   homeTeamId: uuid("home_team_id")
     .notNull()
     .references(() => teams.id, { onDelete: "cascade" }),
@@ -146,7 +172,7 @@ export const matches = pgTable("matches", {
     .notNull()
     .references(() => teams.id, { onDelete: "cascade" }),
   kickoffAt: timestamp("kickoff_at", { withTimezone: true }),
-  status: varchar("status", { length: 16 }).default("scheduled").notNull(), // scheduled | live | finished
+  status: varchar("status", { length: 16 }).default("scheduled").notNull(), // scheduled | live | finished | postponed
   homeScore: integer("home_score"),
   awayScore: integer("away_score"),
   venue: varchar("venue", { length: 120 }),
@@ -158,11 +184,54 @@ export const matchEvents = pgTable("match_events", {
   matchId: uuid("match_id")
     .notNull()
     .references(() => matches.id, { onDelete: "cascade" }),
-  playerId: uuid("player_id").references(() => players.id, { onDelete: "set null" }),
+  playerId: uuid("player_id").references(() => players.id, {
+    onDelete: "set null",
+  }),
   type: varchar("type", { length: 16 }).notNull(), // goal | assist | yellow | red | sub
   minute: integer("minute"),
   detail: varchar("detail", { length: 160 }),
+  // Events come from TheSportsDB, whose players are unrelated to ours, so the
+  // name is stored directly: player_id is only set when we can match one, and
+  // the report must still be able to say who scored when we can't.
+  //
+  // For a goal, player is the scorer and assist the provider of the assist.
+  // For a substitution, player is the one coming OFF and assist the one coming
+  // ON — established from the data itself: of the substitutions we hold, the
+  // `player` side has 139 earlier events in the same match against the
+  // `assist` side's 0, and the `assist` side has 66 later events against 1.
+  playerName: varchar("player_name", { length: 160 }),
+  assistName: varchar("assist_name", { length: 160 }),
+  /** Our player for `assistName`, when one could be matched. */
+  assistPlayerId: uuid("assist_player_id").references(() => players.id, {
+    onDelete: "set null",
+  }),
+  /** Which side the event belongs to, so the report can place it. */
+  isHome: boolean("is_home"),
+  /** Source id, so re-syncing a match doesn't duplicate its events. */
+  externalApiId: varchar("external_api_id", { length: 64 }).unique(),
 });
+
+/**
+ * Per-match team statistics (shots, fouls, corners…). Kept as rows rather than
+ * columns because the provider's stat list varies by competition and grows.
+ */
+export const matchStats = pgTable(
+  "match_stats",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    matchId: uuid("match_id")
+      .notNull()
+      .references(() => matches.id, { onDelete: "cascade" }),
+    stat: varchar("stat", { length: 64 }).notNull(),
+    // Not integers: alongside counts like shots and corners the provider sends
+    // fractional metrics such as expected_goals (0.43).
+    home: real("home"),
+    away: real("away"),
+  },
+  (t) => ({
+    uniqPerStat: unique("match_stats_match_id_stat_unique").on(t.matchId, t.stat),
+  }),
+);
 
 export const standings = pgTable(
   "standings",
@@ -183,7 +252,9 @@ export const standings = pgTable(
     goalsAgainst: integer("goals_against").default(0).notNull(),
     points: integer("points").default(0).notNull(),
     isSimulated: boolean("is_simulated").default(false).notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (t) => ({
     uniqSeasonTeamSim: uniqueIndex("standings_season_team_sim_uq").on(
@@ -201,13 +272,17 @@ export const teamStatistics = pgTable("team_statistics", {
   teamId: uuid("team_id")
     .notNull()
     .references(() => teams.id, { onDelete: "cascade" }),
-  seasonId: uuid("season_id").references(() => seasons.id, { onDelete: "cascade" }),
+  seasonId: uuid("season_id").references(() => seasons.id, {
+    onDelete: "cascade",
+  }),
   avgPossession: numeric("avg_possession", { precision: 5, scale: 2 }),
   goalsPerGame: numeric("goals_per_game", { precision: 5, scale: 2 }),
   cleanSheets: integer("clean_sheets").default(0).notNull(),
   winRate: numeric("win_rate", { precision: 5, scale: 2 }),
   form: jsonb("form"), // last 5 results
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const playerStatistics = pgTable("player_statistics", {
@@ -215,7 +290,9 @@ export const playerStatistics = pgTable("player_statistics", {
   playerId: uuid("player_id")
     .notNull()
     .references(() => players.id, { onDelete: "cascade" }),
-  seasonId: uuid("season_id").references(() => seasons.id, { onDelete: "cascade" }),
+  seasonId: uuid("season_id").references(() => seasons.id, {
+    onDelete: "cascade",
+  }),
   appearances: integer("appearances").default(0).notNull(),
   goals: integer("goals").default(0).notNull(),
   assists: integer("assists").default(0).notNull(),
@@ -234,7 +311,9 @@ export const newsArticles = pgTable("news_articles", {
   summary: text("summary"),
   imageUrl: text("image_url"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
-  fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─────────────────────────────── Favorites ───────────────────────────────
@@ -250,7 +329,9 @@ export const userFavoriteTeams = pgTable(
       .notNull()
       .references(() => teams.id, { onDelete: "cascade" }),
     isPrimary: boolean("is_primary").default(false).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
   },
   (t) => ({
     uniqUserTeam: unique().on(t.userId, t.teamId),
@@ -281,11 +362,17 @@ export const lineups = pgTable("lineups", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   teamId: uuid("team_id").references(() => teams.id, { onDelete: "set null" }),
-  formationId: uuid("formation_id").references(() => formations.id, { onDelete: "set null" }),
+  formationId: uuid("formation_id").references(() => formations.id, {
+    onDelete: "set null",
+  }),
   name: varchar("name", { length: 120 }).notNull(),
   isPublic: boolean("is_public").default(false).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const lineupPlayers = pgTable(
@@ -298,9 +385,12 @@ export const lineupPlayers = pgTable(
     playerId: uuid("player_id")
       .notNull()
       .references(() => players.id, { onDelete: "cascade" }),
-    formationSlotId: uuid("formation_slot_id").references(() => formationSlots.id, {
-      onDelete: "set null",
-    }),
+    formationSlotId: uuid("formation_slot_id").references(
+      () => formationSlots.id,
+      {
+        onDelete: "set null",
+      },
+    ),
     isCaptain: boolean("is_captain").default(false).notNull(),
   },
   (t) => ({
@@ -318,21 +408,25 @@ export const lineupShares = pgTable("lineup_shares", {
     .references(() => users.id, { onDelete: "cascade" }),
   shareToken: varchar("share_token", { length: 64 }).notNull().unique(),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─────────────────────────────── Simulator ───────────────────────────────
 
 export const simulations = pgTable("simulations", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  matchId: uuid("match_id").references(() => matches.id, { onDelete: "set null" }),
+  userId: text("user_id").references(() => users.id, { onDelete: "cascade" }), // <-- AQUI FOI REMOVIDO O .notNull()
+  matchId: uuid("match_id").references(() => matches.id, {
+    onDelete: "set null",
+  }),
   simulatedHomeScore: integer("simulated_home_score"),
   simulatedAwayScore: integer("simulated_away_score"),
   resultingStandings: jsonb("resulting_standings"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─────────────────────────────── Notifications ───────────────────────────────
@@ -346,7 +440,9 @@ export const notifications = pgTable("notifications", {
   title: varchar("title", { length: 200 }).notNull(),
   body: text("body"),
   isRead: boolean("is_read").default(false).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─────────────────────────────── AI features ───────────────────────────────
@@ -361,7 +457,9 @@ export const matchPredictions = pgTable("match_predictions", {
   awayWinProb: numeric("away_win_prob", { precision: 5, scale: 2 }),
   modelVersion: varchar("model_version", { length: 64 }),
   reasoning: jsonb("reasoning"),
-  generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+  generatedAt: timestamp("generated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const transferSuggestions = pgTable("transfer_suggestions", {
@@ -369,12 +467,16 @@ export const transferSuggestions = pgTable("transfer_suggestions", {
   teamId: uuid("team_id")
     .notNull()
     .references(() => teams.id, { onDelete: "cascade" }),
-  playerId: uuid("player_id").references(() => players.id, { onDelete: "set null" }),
+  playerId: uuid("player_id").references(() => players.id, {
+    onDelete: "set null",
+  }),
   weakPosition: varchar("weak_position", { length: 16 }),
   rationale: text("rationale"),
   fitScore: numeric("fit_score", { precision: 5, scale: 2 }),
   dataSource: varchar("data_source", { length: 120 }),
-  generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
+  generatedAt: timestamp("generated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const chatSessions = pgTable("chat_sessions", {
@@ -383,7 +485,9 @@ export const chatSessions = pgTable("chat_sessions", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 200 }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const chatMessages = pgTable("chat_messages", {
@@ -394,7 +498,9 @@ export const chatMessages = pgTable("chat_messages", {
   role: varchar("role", { length: 16 }).notNull(), // user | assistant
   content: text("content").notNull(),
   contextUsed: jsonb("context_used"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 // ─────────────────────────────── Relations ───────────────────────────────
@@ -435,9 +541,18 @@ export const seasonsRelations = relations(seasons, ({ one, many }) => ({
 }));
 
 export const matchesRelations = relations(matches, ({ one, many }) => ({
-  season: one(seasons, { fields: [matches.seasonId], references: [seasons.id] }),
-  homeTeam: one(teams, { fields: [matches.homeTeamId], references: [teams.id] }),
-  awayTeam: one(teams, { fields: [matches.awayTeamId], references: [teams.id] }),
+  season: one(seasons, {
+    fields: [matches.seasonId],
+    references: [seasons.id],
+  }),
+  homeTeam: one(teams, {
+    fields: [matches.homeTeamId],
+    references: [teams.id],
+  }),
+  awayTeam: one(teams, {
+    fields: [matches.awayTeamId],
+    references: [teams.id],
+  }),
   events: many(matchEvents),
   prediction: one(matchPredictions),
 }));
@@ -458,10 +573,13 @@ export const formationsRelations = relations(formations, ({ many }) => ({
   lineups: many(lineups),
 }));
 
-export const chatSessionsRelations = relations(chatSessions, ({ one, many }) => ({
-  user: one(users, { fields: [chatSessions.userId], references: [users.id] }),
-  messages: many(chatMessages),
-}));
+export const chatSessionsRelations = relations(
+  chatSessions,
+  ({ one, many }) => ({
+    user: one(users, { fields: [chatSessions.userId], references: [users.id] }),
+    messages: many(chatMessages),
+  }),
+);
 
 // Convenience type exports
 export type User = typeof users.$inferSelect;

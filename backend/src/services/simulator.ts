@@ -5,8 +5,12 @@ import { HttpError, notFound } from "../lib/http-error.js";
 import { emitTo, room, RT } from "../realtime/io.js";
 
 interface Row {
-  teamId: string;
-  teamName: string;
+  team: {
+    id: string;
+    name: string;
+    shortName: string | null;
+    crestUrl: string | null;
+  };
   played: number;
   won: number;
   drawn: number;
@@ -38,7 +42,7 @@ function rank(rows: Row[]): (Row & { position: number })[] {
         b.points - a.points ||
         b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst) ||
         b.goalsFor - a.goalsFor ||
-        a.teamName.localeCompare(b.teamName),
+        a.team.name.localeCompare(b.team.name),
     )
     .map((r, i) => ({ ...r, position: i + 1 }));
 }
@@ -53,14 +57,19 @@ function rank(rows: Row[]): (Row & { position: number })[] {
  *   - broadcasts the new table to the season room and the requesting user.
  */
 export async function simulateMatch(params: {
-  userId: string;
+  userId: string | null;
   matchId: string;
   homeScore: number;
   awayScore: number;
 }) {
-  const [match] = await db.select().from(matches).where(eq(matches.id, params.matchId)).limit(1);
+  const [match] = await db
+    .select()
+    .from(matches)
+    .where(eq(matches.id, params.matchId))
+    .limit(1);
   if (!match) throw notFound("Match");
-  if (!match.seasonId) throw new HttpError(400, "Match is not attached to a season");
+  if (!match.seasonId)
+    throw new HttpError(400, "Match is not attached to a season");
 
   const seasonId = match.seasonId;
 
@@ -69,6 +78,8 @@ export async function simulateMatch(params: {
     .select({
       teamId: standings.teamId,
       teamName: teams.name,
+      teamShortName: teams.shortName,
+      teamCrestUrl: teams.crestUrl,
       played: standings.played,
       won: standings.won,
       drawn: standings.drawn,
@@ -79,21 +90,50 @@ export async function simulateMatch(params: {
     })
     .from(standings)
     .innerJoin(teams, eq(standings.teamId, teams.id))
-    .where(and(eq(standings.seasonId, seasonId), eq(standings.isSimulated, false)));
+    .where(
+      and(eq(standings.seasonId, seasonId), eq(standings.isSimulated, false)),
+    );
 
-  const table = new Map<string, Row>(baseRows.map((r) => [r.teamId, { ...r }]));
+  const table = new Map<string, Row>(
+    baseRows.map((r) => [
+      r.teamId,
+      {
+        team: {
+          id: r.teamId,
+          name: r.teamName,
+          shortName: r.teamShortName,
+          crestUrl: r.teamCrestUrl,
+        },
+        played: r.played,
+        won: r.won,
+        drawn: r.drawn,
+        lost: r.lost,
+        goalsFor: r.goalsFor,
+        goalsAgainst: r.goalsAgainst,
+        points: r.points,
+      },
+    ]),
+  );
 
   // Ensure both teams exist in the table (a fixture may precede any results).
   for (const teamId of [match.homeTeamId, match.awayTeamId]) {
     if (!table.has(teamId)) {
       const [team] = await db
-        .select({ name: teams.name })
+        .select({
+          name: teams.name,
+          shortName: teams.shortName,
+          crestUrl: teams.crestUrl,
+        })
         .from(teams)
         .where(eq(teams.id, teamId))
         .limit(1);
       table.set(teamId, {
-        teamId,
-        teamName: team?.name ?? "Unknown",
+        team: {
+          id: teamId,
+          name: team?.name ?? "Unknown",
+          shortName: team?.shortName ?? null,
+          crestUrl: team?.crestUrl ?? null,
+        },
         played: 0,
         won: 0,
         drawn: 0,
@@ -113,11 +153,13 @@ export async function simulateMatch(params: {
   // Refresh the season's shared simulated standings (replace previous snapshot).
   await db
     .delete(standings)
-    .where(and(eq(standings.seasonId, seasonId), eq(standings.isSimulated, true)));
+    .where(
+      and(eq(standings.seasonId, seasonId), eq(standings.isSimulated, true)),
+    );
   await db.insert(standings).values(
     ranked.map((r) => ({
       seasonId,
-      teamId: r.teamId,
+      teamId: r.team.id,
       position: r.position,
       played: r.played,
       won: r.won,
@@ -144,7 +186,11 @@ export async function simulateMatch(params: {
 
   const payload = { seasonId, matchId: params.matchId, table: ranked };
   emitTo(room.season(seasonId), RT.STANDINGS_UPDATE, payload);
-  emitTo(room.user(params.userId), RT.STANDINGS_UPDATE, payload);
+  if (params.userId) {
+    emitTo(room.user(params.userId), RT.STANDINGS_UPDATE, payload);
+  }
 
-  return { simulation, table: ranked };
+  // Return the simulation record itself so the client reads the projected table
+  // from `resultingStandings`, the same field the history endpoint exposes.
+  return { ...simulation, resultingStandings: ranked };
 }

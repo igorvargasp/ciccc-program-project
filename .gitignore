@@ -1,0 +1,19 @@
+# Safety net that survives branch switches — per-project .gitignore files
+# disappear when you check out a branch that doesn't have them.
+
+node_modules/
+dist/
+dist-ssr/
+build/
+
+.env
+.env.local
+.env.*.local
+
+*.log
+logs/
+
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
